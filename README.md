@@ -36,7 +36,7 @@
 - Synthetic EDGE computation
 - Synthetic FLAWS computation
 - Denoising
-- Normalization from/to DICOM levels, unit cube ([-0.5, 0.5]), various units
+- Normalization from/to `DICOM` 12bits range, unit cube ([-0.5, 0.5]), various units
 - MP2RAGE bijectivity's correction
 - Multithreading
 - Various utilities, templating and overloads
@@ -45,14 +45,14 @@
 - $B_1$ registration on $T_1$-w UNI,
 - $B_1$ smoothing,
 - masking outside valid $qT_1$ range
-- print_usage function
+- `print_usage` function
 
 ## Still needs
-- Proper CMakeLists.txt / Makefile with support for tests / release / debug / example
+- Proper `CMakeLists.txt` / `Makefile` with support for tests / release / debug / example
 - Test suite (support for windows / linux)
 - Documentation
 - Copyright and Credits header in files
-- Readme / Wiki
+- README / Wiki
 
 
 # Misc
