@@ -1,0 +1,811 @@
+/**
+ * @file main.cpp
+ * @author Timothy ANDERSON (sirtwinkleberry.com)
+ * @brief 
+ * @version 1.0
+ * @date 2024-03-01
+ * 
+ * @copyright GPLv3 (c) 2024
+ * 
+ * @todo registration of B1 onto T1-w UNI
+ * https://github.com/nipy/nibabel/blob/acd0c777256b567461910b1ab6330fc6d93727d4/nibabel/processing.py#L81
+ * https://github.com/nipy/nibabel/blob/acd0c777256b567461910b1ab6330fc6d93727d4/nibabel/affines.py#L144
+ * https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.affine_transform.html
+ * @todo smoothing of B1
+ * 1D Gaussian Kernel across all dimensions
+ * @todo docstrings
+ * @todo print_usage() function
+ * @todo do_mask_outside_valid_qT1_range
+ * 
+ */
+
+#ifdef _WIN32
+#include <windows.h>
+using access = _access;
+#endif
+
+#ifdef __unix__
+#include <unistd.h>
+#endif
+
+#include <typeindex>
+#include <iostream>
+#include <fstream>
+#include <filesystem>
+#include <iomanip>
+#include <cstdlib>
+#include <Eigen/Core>
+#include <boost/timer/timer.hpp>
+
+#include "externals/include/RNifti.h"
+#include "externals/include/json.hpp"
+
+#include "src/mp2rage.h"
+#include "src/interpolate.h"
+#include "src/utils.h"
+#include "src/normalize.h"
+#include "src/denoise.h"
+
+
+void print_usage()
+{
+
+}
+
+void print_command(int argc, char const *argv[])
+{
+    std::string argument;
+    std::for_each( argv, argv + argc , [&]( const char* c_str ){ argument += std::string ( c_str ) + " "; } );
+    std::cout << "COMMAND >> " + argument << std::endl;
+}
+
+bool file_exists(const std::string &path, std::filesystem::file_status status = std::filesystem::file_status{})
+{
+    if (std::filesystem::status_known(status) ? std::filesystem::exists(status) : std::filesystem::exists(std::filesystem::path(path)))
+        return true;
+    return false;
+}
+
+bool parent_is_writable(const std::string &path)
+{
+    if (access(std::filesystem::path(path).parent_path().c_str(), W_OK) == 0)
+        return true;
+    return false;
+}
+
+void check_type_validity_of_parameters(const nlohmann::json &config, bool verbose = true)
+{
+    std::string expected_type = "";
+    std::vector<double> vec;
+    
+    enum TypeID {
+        BOOL
+        , INPUT
+        , OUTPUT
+        , FLOAT
+        , INT
+        , RANGE
+    };
+
+    std::map<std::string, TypeID> map {
+        /* BOOL PARAMETERS */
+        {"verbose", BOOL}
+
+        , {"compute_b1_resliced_smoothed", BOOL}
+        , {"compute_t1wUNI_DEN", BOOL}
+        , {"compute_t1wUNI_B1Corrected", BOOL}
+        , {"compute_t1wUNI_B1Corrected_DEN", BOOL}
+        , {"compute_qT1", BOOL}
+        , {"compute_qR1", BOOL}
+        , {"compute_EDGE", BOOL}
+        , {"compute_EDGE_DEN", BOOL}
+        , {"compute_FLAWS", BOOL}
+        , {"compute_FLAWS_DEN", BOOL}
+
+        /* STRING PARAMETERS */
+        , {"path_INPUT_b1_faUnit", INPUT}
+        , {"path_INPUT_inversion_1_msUnit", INPUT}
+        , {"path_INPUT_inversion_2_msUnit", INPUT}
+        , {"path_INPUT_t1wUNI_dicomUnit", INPUT}
+
+        , {"path_OUTPUT_b1_resliced_faUnit", OUTPUT}
+        , {"path_OUTPUT_b1_resliced_smoothed_faUnit", OUTPUT}
+        , {"path_OUTPUT_t1wUNI_DEN_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_t1wUNI_B1Corrected_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_t1wUNI_B1Corrected_DEN_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_qT1_msUnit", OUTPUT}
+        , {"path_OUTPUT_qR1_pksUnit", OUTPUT}
+        , {"path_OUTPUT_EDGE_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_EDGE_DEN_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_FLAWS_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_FLAWS_DEN_dicomUnit", OUTPUT}
+
+        /* DOUBLE PARAMETERS */
+        , {"vref_b1_vUnit", FLOAT}
+        , {"vref_t1wUNI_vUnit", FLOAT}
+        , {"target_b1_faUnit", FLOAT}
+        , {"noiseShift", FLOAT}
+        , {"smoothingSigma", FLOAT}
+        // MP2RAGE UNI parameters
+        , {"t_echoSpacing_msUnit", FLOAT}
+        , {"t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"t_inversion1_msUnit", FLOAT}
+        , {"t_inversion2_msUnit", FLOAT}
+        , {"fa_1_degUnit", FLOAT}
+        , {"fa_2_degUnit", FLOAT}
+        , {"inversionEfficiency", FLOAT}
+        , {"M0", FLOAT}
+        // MP2RAGE Synthetic EDGE parameters
+        , {"edge_t_echoSpacing_msUnit", FLOAT}
+        , {"edge_t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"edge_t_inversion1_msUnit", FLOAT}
+        , {"edge_t_inversion2_msUnit", FLOAT}
+        , {"edge_fa_1_degUnit", FLOAT}
+        , {"edge_fa_2_degUnit", FLOAT}
+        , {"edge_inversionEfficiency", FLOAT}
+        , {"edge_M0", FLOAT}
+        // MP2RAGE Synthetic FLAWS 1 parameters
+        , {"flaws1_t_echoSpacing_msUnit", FLOAT}
+        , {"flaws1_t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"flaws1_t_inversion1_msUnit", FLOAT}
+        , {"flaws1_t_inversion2_msUnit", FLOAT}
+        , {"flaws1_fa_1_degUnit", FLOAT}
+        , {"flaws1_fa_2_degUnit", FLOAT}
+        , {"flaws1_inversionEfficiency", FLOAT}
+        , {"flaws1_M0", FLOAT}
+        // MP2RAGE Synthetic FLAWS 2 parameters
+        , {"flaws2_t_echoSpacing_msUnit", FLOAT}
+        , {"flaws2_t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"flaws2_t_inversion1_msUnit", FLOAT}
+        , {"flaws2_t_inversion2_msUnit", FLOAT}
+        , {"flaws2_fa_1_degUnit", FLOAT}
+        , {"flaws2_fa_2_degUnit", FLOAT}
+        , {"flaws2_inversionEfficiency", FLOAT}
+        , {"flaws2_M0", FLOAT}
+
+        /* INT PARAMETERS */
+        , {"bitpix", INT}
+        , {"datatype", INT}
+        , {"n_threads", INT}
+        // MP2RAGE UNI parameters
+        , {"n_before", INT}
+        , {"n_after", INT}
+        // MP2RAGE Synthetic EDGE parameters
+        , {"edge_n_before", INT}
+        , {"edge_n_after", INT}
+        // MP2RAGE Synthetic FLAWS 1 parameters
+        , {"flaws1_n_before", INT}
+        , {"flaws1_n_after", INT}
+        // MP2RAGE Synthetic FLAWS 2 parameters
+        , {"flaws2_n_before", INT}
+        , {"flaws2_n_after", INT}
+
+        /* RANGE PARAMETERS */
+        , {"array_b1_relativeUnit", RANGE}
+        , {"array_qT1_msUnit", RANGE}
+    };
+
+    for (const auto &[key, value] : map)
+    {
+        try
+        {
+            if (config[key].is_null()) throw std::invalid_argument(key + " is null. Check its presence in the configuration file.");
+            
+            switch (value)
+            {
+                case BOOL:
+                    expected_type = "boolean";
+                    if ( !config[key].is_boolean() ) throw std::invalid_argument(key + " has wrong type.");
+                    break;
+                case INPUT:
+                    expected_type = "string (input filepath)";
+                    if ( !config[key].is_string() ) throw std::invalid_argument(key + " has wrong type.");
+                    if ( !file_exists(config[key].template get<std::string>()) ) throw std::invalid_argument(key + " file does not exist.");
+                    break;
+                case OUTPUT:
+                    expected_type = "string (output filepath)";
+                    if ( !config[key].is_string() ) throw std::invalid_argument(key + " has wrong type.");
+                    if ( !parent_is_writable(config[key].template get<std::string>()) ) throw std::invalid_argument(key + " location is not writable.");
+                    break;
+                case FLOAT:
+                    expected_type = "positive real";
+                    if ( !config[key].is_number() ) throw std::invalid_argument(key + " has wrong type.");
+                    if ( config[key].template get<double>() < 0) throw std::invalid_argument(key + " should be positive.");
+                    break;
+                case INT:
+                    expected_type = "positive integer";
+                    if ( !config[key].is_number_integer() && !config[key].is_number_unsigned() ) throw std::invalid_argument(key + " has wrong type.");
+                    if ( config[key].template get<int>() < 0) throw std::invalid_argument(key + " should be positive.");
+                    break;
+                case RANGE:
+                    expected_type = "3-elements list (# of pts, min, max)";
+                    if ( !config[key].is_array() ) throw std::invalid_argument(key + " has wrong type.");
+                    vec = config[key].template get<std::vector<double>>();
+                    if ( vec.size() != 3 ) throw std::invalid_argument(key + " should have 3 elements.");
+                    break;
+                default:
+                    throw std::invalid_argument(key + " has wrong type.");
+                    break;
+            }
+
+            std::cout << key << " = " << config[key].dump() << "\n";
+            // std::cout << config[key] << " - " << typeid(config[key]).name() << "\n";
+        }
+        catch (const std::exception &e)
+        {
+            std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
+            std::cout << "\033[1;32m" << "RECEIVED >> " << "\033[0m" << config[key].dump() << std::endl;
+            throw std::invalid_argument(key + " expects " + expected_type + ".");
+        }
+    }
+
+    std::cout << std::endl;
+}
+
+
+int main(int argc, char const *argv[])
+{
+    nlohmann::json config;
+
+    try
+    {
+        if (argc < 2) throw std::runtime_error("Invalid number of arguments passed to the program. Please supply a path to a JSON runtime configuration file.");
+        if (argc > 2) throw std::runtime_error("Invalid number of arguments passed to the program. Please only supply a path to a JSON runtime configuration file.");
+        std::ifstream file(argv[1]);
+        config = nlohmann::json::parse(file);
+        check_type_validity_of_parameters(config, true);
+    }
+    catch (const std::exception &e)
+    {
+        print_usage();
+        std::cout << e.what() << std::endl;
+        print_command(argc, argv);
+        return EXIT_FAILURE;
+    }
+
+
+    /*
+        SOME CONSTANTS
+    */
+    int VERBOSE = config["verbose"].template get<bool>();
+    int DATATYPE = config["datatype"].template get<int>();
+    int N_THREADS = config["n_threads"].template get<int>();
+    
+
+    /*
+        BRINGING VARIABLES INTO SCOPE
+    */
+    Eigen::ArrayXd eigen_T1W_UNI_centered;
+    Eigen::ArrayXd eigen_B1_in_UNI_SPACE_relative;
+    Eigen::ArrayXd eigen_T1W_INV1_0_to_4095;
+    Eigen::ArrayXd eigen_T1W_INV2_0_to_4095;
+    Eigen::ArrayXd data_QR1_in_pkunit;
+    Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_masked;
+    Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked;
+    Eigen::ArrayXd eigen_T1W_UNI_0_TO_4095_denoised;
+    Eigen::ArrayXd SYN_EDGE_0_TO_4095;
+    Eigen::ArrayXd SYN_EDGE_0_TO_4095_denoised;
+    Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked;
+    Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked_denoised;
+
+    boost::timer::auto_cpu_timer timer;
+    std::vector<std::pair<std::string, Eigen::ArrayXd*>> export_vector;
+
+
+    /* 
+        LOADING THE MAP: T1W UNI
+        MAKING IT INTO AN EIGEN ARRAY OF DOUBLE
+        RESCALING IT TO UNIT CUBE CENTERED AT 0 ([-.5, .5])
+    */
+    const RNifti::NiftiImage volume_T1W_UNI_0_to_4095 = RNifti::NiftiImage(
+        config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
+        , VERBOSE
+    );
+    std::vector<double> VECTOR = volume_T1W_UNI_0_to_4095.getData<double>();
+    const size_t SIZE = VECTOR.size();
+
+    #pragma omp parallel num_threads(std::min(N_THREADS, 4)) shared(SIZE, VECTOR, config, eigen_T1W_UNI_centered, eigen_B1_in_UNI_SPACE_relative, eigen_T1W_INV1_0_to_4095, eigen_T1W_INV2_0_to_4095)
+    #pragma omp single
+    {
+        #pragma omp task
+        {
+            eigen_T1W_UNI_centered = TO_UNI_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(
+                Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                    VECTOR.data(),
+                    SIZE
+                )
+                , VERBOSE
+            );
+        }
+
+
+        /* 
+            LOADING THE MAP: B1
+            MAKING IT INTO AN EIGEN ARRAY OF DOUBLE
+            RESCALING IT TO RELATIVE UNITS
+            /!\ WARNING: Currently, assuming that B1 size == T1w size (pre-registration)
+        */
+        #pragma omp task
+        {
+            const RNifti::NiftiImage volume_B1_in_UNI_SPACE_0_to_4095 = RNifti::NiftiImage(
+                config["path_INPUT_b1_faUnit"].template get<std::string>()
+                , VERBOSE
+            );
+            eigen_B1_in_UNI_SPACE_relative = B1_TO_RELATIVE_B1<Eigen::ArrayXd, Eigen::ArrayXd>(
+                Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                    volume_B1_in_UNI_SPACE_0_to_4095.getData<double>().data(),
+                    SIZE
+                )
+                , config["target_b1_faUnit"].template get<double>()
+                , config["vref_b1_vUnit"].template get<double>()
+                , config["vref_t1wUNI_vUnit"].template get<double>()
+                , VERBOSE
+            );
+        }
+
+
+        /* 
+            LOAD INVERSION MAPS ONLY IF DENOISE ALGORITHM NEEDED
+            TO LOWER MEMORY USE AND I/O RUNTIME LOSS
+            NEED TO BRING eigen_T1W_INV[1/2]_0_to_4095 TO SCOPE THOUGH
+        */
+        if ( config["compute_t1wUNI_DEN"].template get<bool>()
+            || config["compute_t1wUNI_B1Corrected_DEN"].template get<bool>()
+            || config["compute_EDGE_DEN"].template get<bool>()
+            || config["compute_FLAWS_DEN"].template get<bool>() )
+        {
+            /* 
+                LOADING THE MAP: T1W INV 1
+                MAKING IT INTO AN EIGEN ARRAY OF DOUBLE
+            */
+            #pragma omp task
+            {
+                const RNifti::NiftiImage volume_T1W_INV1_0_to_4095 = RNifti::NiftiImage(
+                    config["path_INPUT_inversion_1_msUnit"].template get<std::string>()
+                    , VERBOSE
+                );
+                eigen_T1W_INV1_0_to_4095 = Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                    volume_T1W_INV1_0_to_4095.getData<double>().data()
+                    , SIZE
+                );
+            }
+
+
+            /* 
+                LOADING THE MAP: T1W INV 2
+                MAKING IT INTO AN EIGEN ARRAY OF DOUBLE
+            */
+            #pragma omp task
+            {
+                const RNifti::NiftiImage volume_T1W_INV2_0_to_4095 = RNifti::NiftiImage(
+                    config["path_INPUT_inversion_2_msUnit"].template get<std::string>()
+                    , VERBOSE
+                );
+                eigen_T1W_INV2_0_to_4095 = Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                    volume_T1W_INV2_0_to_4095.getData<double>().data()
+                    , SIZE
+                );
+            }
+        }
+
+        #pragma omp taskwait
+    }
+
+    
+    /* 
+        PREPARING: INTERPOLANT
+        - DEFINING 2 RANGES: (X (no unit), Y (ms))
+        - INITIALIZING INTERPOLANT FROM THESE RANGES
+    */
+    const std::vector<double> RANGE_B1 = config["array_b1_relativeUnit"].template get<std::vector<double>>();
+    const std::vector<double> RANGE_T1 = config["array_qT1_msUnit"].template get<std::vector<double>>();
+    const Eigen::ArrayXd B1VectorRange_relative = Eigen::ArrayXd::LinSpaced(
+        RANGE_B1.at(0)
+        , RANGE_B1.at(1)
+        , RANGE_B1.at(2))
+    ;
+    const Eigen::ArrayXd QT1VectorRange_in_unit = Eigen::ArrayXd::LinSpaced(
+        RANGE_T1.at(0)
+        , RANGE_T1.at(1)
+        , RANGE_T1.at(2)
+    );
+
+    auto interp = INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(
+        B1VectorRange_relative
+        , QT1VectorRange_in_unit
+        , config["t_inversion1_msUnit"].template get<double>()
+        , config["t_inversion2_msUnit"].template get<double>()
+        , config["t_repeatMP2RAGE_msUnit"].template get<double>()
+        , config["t_echoSpacing_msUnit"].template get<double>()
+        , config["n_before"].template get<int>()
+        , config["n_after"].template get<int>()
+        , config["fa_1_degUnit"].template get<double>()
+        , config["fa_2_degUnit"].template get<double>()
+        , config["inversionEfficiency"].template get<double>()
+        , config["M0"].template get<double>()
+        , VERBOSE
+    );
+
+
+    /* 
+        GENERATING THE MAP: QT1 (ms)
+        MAKING IT INTO AN STD VECTOR OF DOUBLE
+        ROUNDING IT
+        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+    */
+    auto data_QT1_in_unit = COMPUTE_QT1MAP_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+        interp
+        , eigen_B1_in_UNI_SPACE_relative
+        , eigen_T1W_UNI_centered
+        , N_THREADS
+        , VERBOSE
+    );
+
+    if ( config["compute_qT1"].template get<bool>() )
+    {
+        export_vector.push_back(
+            std::pair<std::string, Eigen::ArrayXd*>(
+                config["path_OUTPUT_qT1_msUnit"].template get<std::string>()
+                , &data_QT1_in_unit
+            )
+        );
+        // DATA_TO_FILE<double, Eigen::ArrayXd>(
+            // config["path_OUTPUT_qT1_msUnit"].template get<std::string>()
+            // , data_QT1_in_unit
+            // , volume_T1W_UNI_0_to_4095
+            // , DATATYPE
+            // , true
+            // , VERBOSE
+        // );
+    }
+
+
+    /* 
+        GENERATING THE MAP: QR1 ((ms)^-1) AND RESCALING IT BY 10^6 ((ms)^-1 -> (ks)^-1)
+        MAKING IT INTO AN STD VECTOR OF DOUBLE
+        ROUNDING IT
+        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+    */
+    if ( config["compute_qR1"].template get<bool>() )
+    {
+        data_QR1_in_pkunit = (Eigen::ArrayXd) (1e6 * COMPUTE_QR1MAP_IN_PER_UNIT<Eigen::ArrayXd, Eigen::ArrayXd>(
+            data_QT1_in_unit.array()
+            , VERBOSE
+        ).array());
+
+        export_vector.push_back(
+            std::pair<std::string, Eigen::ArrayXd*>(
+                config["path_OUTPUT_qR1_pksUnit"].template get<std::string>()
+                , &data_QR1_in_pkunit
+            )
+        );
+
+        // DATA_TO_FILE<double, Eigen::ArrayXd>(
+            // config["path_OUTPUT_qR1_pksUnit"].template get<std::string>()
+            // , data_QR1_in_pkunit
+            // , volume_T1W_UNI_0_to_4095
+            // , DATATYPE
+            // , true
+            // , VERBOSE
+        // );
+    }
+
+
+    /* 
+        GENERATING THE MAP: T1W UNI - BACK B1-CORRECTED
+        RESCALING IT
+        MASKING IT
+        MAKING IT INTO AN STD VECTOR OF DOUBLE
+        ROUNDING IT
+        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+    */
+    if ( config["compute_t1wUNI_B1Corrected"].template get<bool>() || config["compute_t1wUNI_B1Corrected_DEN"].template get<bool>() )
+    {
+        auto data_T1W_UNI_CORRECTED_centered = COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
+            data_QT1_in_unit
+            , config["t_inversion1_msUnit"].template get<double>()
+            , config["t_inversion2_msUnit"].template get<double>()
+            , config["t_repeatMP2RAGE_msUnit"].template get<double>()
+            , config["t_echoSpacing_msUnit"].template get<double>()
+            , config["n_before"].template get<int>()
+            , config["n_after"].template get<int>()
+            , config["fa_1_degUnit"].template get<double>()
+            , config["fa_2_degUnit"].template get<double>()
+            , config["inversionEfficiency"].template get<double>()
+            , config["M0"].template get<double>()
+            , N_THREADS
+            , VERBOSE
+        );
+
+        if ( config["compute_t1wUNI_B1Corrected"].template get<bool>() )
+        {
+            auto data_T1W_UNI_CORRECTED_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered.matrix().reshaped(), VERBOSE);
+
+            data_T1W_UNI_CORRECTED_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095, data_QT1_in_unit, VERBOSE);
+
+            export_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_t1wUNI_B1Corrected_dicomUnit"].template get<std::string>()
+                    , &data_T1W_UNI_CORRECTED_0_TO_4095_masked
+                )
+            );
+
+            // DATA_TO_FILE<double, Eigen::ArrayXd>(
+                // config["path_OUTPUT_t1wUNI_B1Corrected_dicomUnit"].template get<std::string>()
+                // , data_T1W_UNI_CORRECTED_0_TO_4095_masked
+                // , volume_T1W_UNI_0_to_4095
+                // , DATATYPE
+                // , true
+                // , VERBOSE
+            // );
+        }
+    
+        /* 
+            GENERATING THE MAP: T1W UNI - BACK B1-CORRECTED AND DENOISED
+            RESCALING IT
+            MAKING IT INTO AN STD VECTOR OF DOUBLE
+            ROUNDING IT
+            EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        */
+        if ( config["compute_t1wUNI_B1Corrected_DEN"].template get<bool>() )
+        {
+            auto data_T1W_UNI_CORRECTED_centered_denoised = DENOISE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+                data_T1W_UNI_CORRECTED_centered.matrix().reshaped()
+                , eigen_T1W_INV1_0_to_4095
+                , eigen_T1W_INV2_0_to_4095
+                , config["noiseShift"].template get<double>()
+                , VERBOSE);
+
+            auto data_T1W_UNI_CORRECTED_0_TO_4095_denoised = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered_denoised.matrix().reshaped(), VERBOSE);
+
+            data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095_denoised, data_QT1_in_unit, VERBOSE);
+       
+            export_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_t1wUNI_B1Corrected_DEN_dicomUnit"].template get<std::string>()
+                    , &data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked
+                )
+            );
+
+            // DATA_TO_FILE<double, Eigen::ArrayXd>(
+                // config["path_OUTPUT_t1wUNI_B1Corrected_DEN_dicomUnit"].template get<std::string>()
+                // , data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked
+                // , volume_T1W_UNI_0_to_4095
+                // , DATATYPE
+                // , true
+                // , VERBOSE
+            // );
+        }
+    }
+
+
+    /* 
+        GENERATING THE MAP: T1W UNI (ORIGINAL) - DENOISED
+        RESCALING IT
+        MAKING IT INTO AN STD VECTOR OF DOUBLE
+        ROUNDING IT
+        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+    */
+    if ( config["compute_t1wUNI_DEN"].template get<bool>() )
+    {
+        auto eigen_T1W_UNI_centered_denoised = DENOISE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+            eigen_T1W_UNI_centered.matrix().reshaped()
+            , eigen_T1W_INV1_0_to_4095
+            , eigen_T1W_INV2_0_to_4095
+            , config["noiseShift"].template get<double>()
+            , VERBOSE);
+
+        eigen_T1W_UNI_0_TO_4095_denoised = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(eigen_T1W_UNI_centered_denoised.matrix().reshaped(), VERBOSE);
+
+        export_vector.push_back(
+            std::pair<std::string, Eigen::ArrayXd*>(
+                config["path_OUTPUT_t1wUNI_DEN_dicomUnit"].template get<std::string>()
+                , &eigen_T1W_UNI_0_TO_4095_denoised
+            )
+        );
+
+        // DATA_TO_FILE<double, Eigen::ArrayXd>(
+            // config["path_OUTPUT_t1wUNI_DEN_dicomUnit"].template get<std::string>()
+            // , eigen_T1W_UNI_0_TO_4095_denoised
+            // , volume_T1W_UNI_0_to_4095
+            // , DATATYPE
+            // , true
+            // , VERBOSE
+        // );
+    }
+
+    /* 
+        GENERATING THE MAP: SYNTHETIC EDGE
+        USING DEFAULT PARAMETRIZATION
+        RESCALING IT
+        MAKING IT INTO AN STD VECTOR OF DOUBLE
+        ROUNDING IT
+        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+    */
+    if ( config["compute_EDGE"].template get<bool>() || config["compute_EDGE_DEN"].template get<bool>() )
+    {
+        auto SYN_EDGE = EDGE_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
+            data_QT1_in_unit.matrix().reshaped()
+            , config["edge_t_inversion1_msUnit"].template get<double>()
+            , config["edge_t_inversion2_msUnit"].template get<double>()
+            , config["edge_t_repeatMP2RAGE_msUnit"].template get<double>()
+            , config["edge_t_echoSpacing_msUnit"].template get<double>()
+            , config["edge_n_before"].template get<int>()
+            , config["edge_n_after"].template get<int>()
+            , config["edge_fa_1_degUnit"].template get<double>()
+            , config["edge_fa_2_degUnit"].template get<double>()
+            , config["edge_inversionEfficiency"].template get<double>()
+            , config["edge_M0"].template get<double>()
+            , N_THREADS
+            , VERBOSE);
+
+        SYN_EDGE_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_EDGE.matrix().reshaped(), VERBOSE);
+
+        if ( config["compute_EDGE"].template get<bool>())
+        {
+            export_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_EDGE_dicomUnit"].template get<std::string>()
+                    , &SYN_EDGE_0_TO_4095
+                )
+            );
+
+            // DATA_TO_FILE<double, Eigen::ArrayXd>(
+                // config["path_OUTPUT_EDGE_dicomUnit"].template get<std::string>()
+                // , SYN_EDGE_0_TO_4095
+                // , volume_T1W_UNI_0_to_4095
+                // , DATATYPE
+                // , true
+                // , VERBOSE
+            // );
+        }
+
+
+        /* 
+            GENERATING THE MAP: SYNTHETIC EDGE - DENOISED
+            MAKING IT INTO AN STD VECTOR OF DOUBLE
+            ROUNDING IT
+            EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        */
+        if ( config["compute_EDGE_DEN"].template get<bool>() )
+        {
+            SYN_EDGE_0_TO_4095_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+                SYN_EDGE_0_TO_4095.matrix().reshaped()
+                , eigen_T1W_INV1_0_to_4095
+                , eigen_T1W_INV2_0_to_4095
+                , config["noiseShift"].template get<double>()
+                , VERBOSE);
+
+            export_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_EDGE_DEN_dicomUnit"].template get<std::string>()
+                    , &SYN_EDGE_0_TO_4095_denoised
+                )
+            );
+
+            // DATA_TO_FILE<double, Eigen::ArrayXd>(
+                // config["path_OUTPUT_EDGE_DEN_dicomUnit"].template get<std::string>()
+                // , SYN_EDGE_0_TO_4095_denoised
+                // , volume_T1W_UNI_0_to_4095
+                // , DATATYPE
+                // , true
+                // , VERBOSE
+            // );
+        }
+    }
+
+    /* 
+        GENERATING THE MAP: SYNTHETIC FLAWS
+        USING DEFAULT PARAMETRIZATION
+        RESCALING IT
+        MASKING IT
+        MAKING IT INTO AN STD VECTOR OF DOUBLE
+        ROUNDING IT
+        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+    */
+    if ( config["compute_FLAWS"].template get<bool>() || config["compute_EDGE_DEN"].template get<bool>() )
+    {
+        auto SYN_FLAWS = FLAWS_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
+            data_QT1_in_unit.matrix().reshaped()
+            , config["flaws1_t_inversion1_msUnit"].template get<double>()
+            , config["flaws1_t_inversion2_msUnit"].template get<double>()
+            , config["flaws1_t_repeatMP2RAGE_msUnit"].template get<double>()
+            , config["flaws1_t_echoSpacing_msUnit"].template get<double>()
+            , config["flaws1_n_before"].template get<int>()
+            , config["flaws1_n_after"].template get<int>()
+            , config["flaws1_fa_1_degUnit"].template get<double>()
+            , config["flaws1_fa_2_degUnit"].template get<double>()
+            , config["flaws1_inversionEfficiency"].template get<double>()
+            , config["flaws1_M0"].template get<double>()
+            , config["flaws2_t_inversion1_msUnit"].template get<double>()
+            , config["flaws2_t_inversion2_msUnit"].template get<double>()
+            , config["flaws2_t_repeatMP2RAGE_msUnit"].template get<double>()
+            , config["flaws2_t_echoSpacing_msUnit"].template get<double>()
+            , config["flaws2_n_before"].template get<int>()
+            , config["flaws2_n_after"].template get<int>()
+            , config["flaws2_fa_1_degUnit"].template get<double>()
+            , config["flaws2_fa_2_degUnit"].template get<double>()
+            , config["flaws2_inversionEfficiency"].template get<double>()
+            , config["flaws2_M0"].template get<double>()
+            , N_THREADS
+            , VERBOSE);
+
+        auto SYN_FLAWS_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS.matrix().reshaped(), VERBOSE);
+
+        SYN_FLAWS_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS_0_TO_4095, data_QT1_in_unit, VERBOSE);
+
+        if ( config["compute_FLAWS"].template get<bool>() )
+        {
+            export_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_FLAWS_dicomUnit"].template get<std::string>()
+                    , &SYN_FLAWS_0_TO_4095_masked
+                )
+            );
+
+            // DATA_TO_FILE<double, Eigen::ArrayXd>(
+                // config["path_OUTPUT_FLAWS_dicomUnit"].template get<std::string>()
+                // , SYN_FLAWS_0_TO_4095_masked
+                // , volume_T1W_UNI_0_to_4095
+                // , DATATYPE
+                // , true
+                // , VERBOSE
+            // );
+        }
+
+
+        /* 
+            GENERATING THE MAP: SYNTHETIC FLAWS - DENOISED
+            MAKING IT INTO AN STD VECTOR OF DOUBLE
+            ROUNDING IT
+            EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        */
+        if ( config["compute_FLAWS_DEN"].template get<bool>() )
+        {
+            SYN_FLAWS_0_TO_4095_masked_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+                SYN_FLAWS_0_TO_4095_masked.matrix().reshaped()
+                , eigen_T1W_INV1_0_to_4095
+                , eigen_T1W_INV2_0_to_4095
+                , config["noiseShift"].template get<double>()
+                , VERBOSE);
+
+            export_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_qR1_pksUnit"].template get<std::string>()
+                    , &data_QR1_in_pkunit
+                )
+            );
+
+            // DATA_TO_FILE<double, Eigen::ArrayXd>(
+                // config["path_OUTPUT_FLAWS_DEN_dicomUnit"].template get<std::string>()
+                // , SYN_FLAWS_0_TO_4095_masked_denoised
+                // , volume_T1W_UNI_0_to_4095
+                // , DATATYPE
+                // , true
+                // , VERBOSE
+            // );
+        }
+    }
+
+
+    /*
+        EXPORT TO FILES
+    */
+    EXPORT_RESULTS<Eigen::ArrayXd>(
+        export_vector
+        , volume_T1W_UNI_0_to_4095
+        , DATATYPE
+        , true
+        , std::min(N_THREADS, (int) export_vector.size())
+        , VERBOSE
+    );
+    
+    export_vector.clear();
+
+
+    /*
+        END OF PROGRAM
+    */
+    print_command(argc, argv);
+    return EXIT_SUCCESS;
+}
