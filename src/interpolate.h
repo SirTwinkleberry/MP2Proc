@@ -64,7 +64,7 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INTERPOLATOR(const XT &X, cons
  * @return XT 
  */
 template <typename XT, typename YT>
-static XT RESTORE_BIJECTIVITY(const XT &X, const YT &BOUNDS, bool verbose = true)
+static XT RESTORE_BIJECTIVITY(const XT &X, const YT &BOUNDS, std::pair<double, double> *bijectivity_range, bool verbose = true)
 {
     boost::timer::auto_cpu_timer timer;
 
@@ -111,6 +111,9 @@ static XT RESTORE_BIJECTIVITY(const XT &X, const YT &BOUNDS, bool verbose = true
         }
     }
 
+    bijectivity_range->first = min_bounds;
+    bijectivity_range->second = max_bounds;
+
     if (verbose) std::cout << "Bijectivity range: " << min_bounds << " < T1 (in provided unit) < " << max_bounds << std::endl;
 
     return (XT) out;
@@ -123,18 +126,18 @@ static XT RESTORE_BIJECTIVITY(const XT &X, const YT &BOUNDS, bool verbose = true
 /**
  * @brief Overload of `RESTORE_BIJECTIVITY<XT, YT>(...)`
  */
-static Eigen::ArrayXd RESTORE_BIJECTIVITY(const Eigen::ArrayXd &X, const Eigen::ArrayXd &BOUNDS, bool verbose = true)
+static Eigen::ArrayXd RESTORE_BIJECTIVITY(const Eigen::ArrayXd &X, const Eigen::ArrayXd &BOUNDS, std::pair<double, double> *bijectivity_range, bool verbose = true)
 {
-    return RESTORE_BIJECTIVITY<Eigen::ArrayXd, Eigen::ArrayXd>(X, BOUNDS, verbose);
+    return RESTORE_BIJECTIVITY<Eigen::ArrayXd, Eigen::ArrayXd>(X, BOUNDS, bijectivity_range, verbose);
 }
 
 /**
  * @brief Overload of `RESTORE_BIJECTIVITY<XT, YT>(...)`
  */
 template <typename T>
-static T RESTORE_BIJECTIVITY(const T &X, const T &BOUNDS, bool verbose = true)
+static T RESTORE_BIJECTIVITY(const T &X, const T &BOUNDS, std::pair<double, double> *bijectivity_range, bool verbose = true)
 {
-    return RESTORE_BIJECTIVITY<T, T>(X, BOUNDS, verbose);
+    return RESTORE_BIJECTIVITY<T, T>(X, BOUNDS, bijectivity_range, verbose);
 }
 
 /**

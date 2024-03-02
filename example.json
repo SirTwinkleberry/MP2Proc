@@ -1,6 +1,9 @@
 {
     "verbose" : true,
 
+    "do_mask_outside_valid_qT1_range": true,
+    "do_round": true,
+
     "compute_b1_resliced_smoothed" : true,
     "compute_t1wUNI_DEN" : true,
     "compute_t1wUNI_B1Corrected" : true,

@@ -15,7 +15,6 @@
  * 1D Gaussian Kernel across all dimensions
  * @todo docstrings
  * @todo print_usage() function
- * @todo do_mask_outside_valid_qT1_range
  * 
  */
 
@@ -90,6 +89,9 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
     std::map<std::string, TypeID> map {
         /* BOOL PARAMETERS */
         {"verbose", BOOL}
+
+        , {"do_mask_outside_valid_qT1_range", BOOL}
+        , {"do_round", BOOL}
 
         , {"compute_b1_resliced_smoothed", BOOL}
         , {"compute_t1wUNI_DEN", BOOL}
@@ -268,6 +270,7 @@ int main(int argc, char const *argv[])
         SOME CONSTANTS
     */
     int VERBOSE = config["verbose"].template get<bool>();
+    int DO_ROUND = config["do_round"].template get<bool>();
     int DATATYPE = config["datatype"].template get<int>();
     int N_THREADS = config["n_threads"].template get<int>();
     
@@ -290,6 +293,7 @@ int main(int argc, char const *argv[])
 
     boost::timer::auto_cpu_timer timer;
     std::vector<std::pair<std::string, Eigen::ArrayXd*>> export_vector;
+    std::pair<double, double> bijectivity_range = std::pair<double, double>(0., 0.);
 
 
     /* 
@@ -423,6 +427,7 @@ int main(int argc, char const *argv[])
         , config["fa_2_degUnit"].template get<double>()
         , config["inversionEfficiency"].template get<double>()
         , config["M0"].template get<double>()
+        , &bijectivity_range
         , VERBOSE
     );
 
@@ -433,13 +438,16 @@ int main(int argc, char const *argv[])
         ROUNDING IT
         EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
     */
-    auto data_QT1_in_unit = COMPUTE_QT1MAP_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+    Eigen::ArrayXd data_QT1_in_unit = COMPUTE_QT1MAP_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
         interp
         , eigen_B1_in_UNI_SPACE_relative
         , eigen_T1W_UNI_centered
         , N_THREADS
         , VERBOSE
     );
+
+    if ( config["do_mask_outside_valid_qT1_range"].template get<bool>() )
+        data_QT1_in_unit = MASK_FROM_RANGE<Eigen::ArrayXd>(data_QT1_in_unit, bijectivity_range, VERBOSE);
 
     if ( config["compute_qT1"].template get<bool>() )
     {
@@ -795,7 +803,7 @@ int main(int argc, char const *argv[])
         export_vector
         , volume_T1W_UNI_0_to_4095
         , DATATYPE
-        , true
+        , DO_ROUND
         , std::min(N_THREADS, (int) export_vector.size())
         , VERBOSE
     );
