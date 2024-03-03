@@ -3,8 +3,8 @@
 #include <iostream>
 #include <filesystem>
 
-#include "/home/tanderson/tanderson/ants/ANTs/Examples/include/antsApplyTransforms.h"
-#include "/home/tanderson/tanderson/ants/ANTs/Examples/include/SmoothImage.h"
+#include "externals/include/ANTs/antsApplyTransforms.h"
+#include "externals/include/ANTs/SmoothImage.h"
 
 
 int main(int argc, char const *argv[])
