@@ -1,8 +1,9 @@
 #pragma once
 
 #include <iostream>
-#include <Eigen/Dense>
 #include <boost/timer/timer.hpp>
+
+#include "externals/include/Eigen/Dense"
 
 
 /**

@@ -33,11 +33,11 @@ using access = _access;
 #include <filesystem>
 #include <iomanip>
 #include <cstdlib>
-#include <Eigen/Core>
 #include <boost/timer/timer.hpp>
 
 #include "externals/include/RNifti.h"
 #include "externals/include/json.hpp"
+#include "externals/include/Eigen/Core"
 
 #include "src/mp2rage.h"
 #include "src/interpolate.h"

@@ -1,9 +1,10 @@
 #pragma once
 
 #include <cmath>
-#include <Eigen/Dense>
 #include <boost/timer/timer.hpp>
 #include <omp.h>
+
+#include "externals/include/Eigen/Dense"
 
 
 /**

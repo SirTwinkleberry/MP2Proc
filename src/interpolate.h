@@ -7,11 +7,11 @@
 #include <vector>
 #include <algorithm>
 #include <type_traits>
-#include <Eigen/Dense>
 #include <boost/timer/timer.hpp>
 
 #include "externals/include/Interpolate.hpp"
 #include "externals/include/AnyInterpolator.hpp"
+#include "externals/include/Eigen/Dense"
 
 
 /**

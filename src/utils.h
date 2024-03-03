@@ -1,11 +1,11 @@
 #pragma once
 
 #include <vector>
-#include <Eigen/Dense>
 #include <boost/timer/timer.hpp>
 #include <omp.h>
 
 #include "externals/include/RNifti.h"
+#include "externals/include/Eigen/Dense"
 
 #include "src/interpolate.h"
 #include "src/mp2rage.h"
