@@ -1,6 +1,10 @@
 {
     "verbose" : true,
 
+    "do_transform_B1_map_to_t1wUNI_space" : true,
+    "do_smoothing_of_B1_map_in_t1wUNI_space" : true,
+    "do_smoothing_using_median_filtering" : false,
+    "is_smoothingSigma_in_spacing_units" : false,
     "do_mask_outside_valid_qT1_range": true,
     "do_round": true,
 
@@ -33,12 +37,14 @@
     "path_OUTPUT_FLAWS_dicomUnit" : "/mnt/c/Users/tanderson/Desktop/b1Correction/cpp/CPP_FLAWS_dicomUnit.nii.gz",
     "path_OUTPUT_FLAWS_DEN_dicomUnit" : "/mnt/c/Users/tanderson/Desktop/b1Correction/cpp/CPP_FLAWS_DEN_dicomUnit.nii.gz",
 
+    "ants_interpolation_method_for_resampling": "BSpline[3]",
+    "ants_smoothing_sigma": "1x1x1",
+
 
     "vref_b1_vUnit" : 247.007827759,
     "vref_t1wUNI_vUnit" : 247.007827759,
     "target_b1_faUnit" : 899.9,
     "noiseShift" : 100.0,
-    "smoothingSigma" : 1.0,
 
     "t_echoSpacing_msUnit" : 7.4,
     "t_repeatMP2RAGE_msUnit" : 5000.0,

@@ -82,6 +82,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         BOOL
         , INPUT
         , OUTPUT
+        , STRING
         , FLOAT
         , INT
         , RANGE
@@ -91,6 +92,10 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         /* BOOL PARAMETERS */
         {"verbose", BOOL}
 
+        , {"do_transform_B1_map_to_t1wUNI_space", BOOL}
+        , {"do_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
+        , {"do_smoothing_using_median_filtering", BOOL}
+        , {"is_smoothingSigma_in_spacing_units", BOOL}
         , {"do_mask_outside_valid_qT1_range", BOOL}
         , {"do_round", BOOL}
 
@@ -122,6 +127,9 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"path_OUTPUT_EDGE_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_FLAWS_dicomUnit", OUTPUT}
         , {"path_OUTPUT_FLAWS_DEN_dicomUnit", OUTPUT}
+
+        , {"ants_interpolation_method_for_resampling", STRING}
+        , {"ants_smoothing_sigma", STRING}
 
         /* DOUBLE PARAMETERS */
         , {"vref_b1_vUnit", FLOAT}
@@ -210,6 +218,10 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
                     if ( !config[key].is_string() ) throw std::invalid_argument(key + " has wrong type.");
                     if ( !parent_is_writable(config[key].template get<std::string>()) ) throw std::invalid_argument(key + " location is not writable.");
                     break;
+                case STRING:
+                    expected_type = "string";
+                    if ( !config[key].is_string() ) throw std::invalid_argument(key + " has wrong type.");
+                    break;
                 case FLOAT:
                     expected_type = "positive real";
                     if ( !config[key].is_number() ) throw std::invalid_argument(key + " has wrong type.");
@@ -274,6 +286,7 @@ int main(int argc, char const *argv[])
     int DO_ROUND = config["do_round"].template get<bool>();
     int DATATYPE = config["datatype"].template get<int>();
     int N_THREADS = config["n_threads"].template get<int>();
+    std::string PATH_B1_MAP = config["path_INPUT_b1_faUnit"].template get<std::string>();
     
 
     /*
@@ -295,6 +308,45 @@ int main(int argc, char const *argv[])
     boost::timer::auto_cpu_timer timer;
     std::vector<std::pair<std::string, Eigen::ArrayXd*>> export_vector;
     std::pair<double, double> bijectivity_range = std::pair<double, double>(0., 0.);
+
+    
+    /* 
+        PREPROCESSING THE MAP: B1
+        TRANSFORMING IT TO T1W UNI SPACE
+        APPLYING A GAUSSIAN SMOOTH TO IT
+    */
+    if ( config["do_transform_B1_map_to_t1wUNI_space"].template get<bool>() )
+    {
+        if ( ANTS_APPLY_TRANSFORMS(
+                PATH_B1_MAP
+                , config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
+                , config["path_OUTPUT_b1_resliced_faUnit"].template get<std::string>()
+                , "default"
+                , "identity"
+                , config["ants_interpolation_method_for_resampling"].template get<std::string>()
+                , 0.0
+                , 3
+                , 0
+                , VERBOSE)
+            == EXIT_SUCCESS )
+            PATH_B1_MAP = config["path_OUTPUT_b1_resliced_faUnit"].template get<std::string>();
+        else std::cout << "\033[1;31mFailed to apply transforms. Attempting to continue without.\033[0m" << std::endl;
+
+    }
+
+    if ( config["do_smoothing_of_B1_map_in_t1wUNI_space"].template get<bool>() )
+    {
+        if ( ANTS_SMOOTH_IMAGE(
+                PATH_B1_MAP
+                , config["path_OUTPUT_b1_resliced_smoothed_faUnit"].template get<std::string>()
+                , config["ants_smoothing_sigma"].template get<std::string>()
+                , config["is_smoothingSigma_in_spacing_units"].template get<bool>()
+                , config["do_smoothing_using_median_filtering"].template get<bool>()
+                , VERBOSE)
+            == EXIT_SUCCESS )
+            PATH_B1_MAP = config["path_OUTPUT_b1_resliced_smoothed_faUnit"].template get<std::string>();
+        else std::cout << "\033[1;31mFailed to apply Gaussian smoothing. Continuing without.\033[0m" << std::endl;
+    }
 
 
     /* 
@@ -333,7 +385,7 @@ int main(int argc, char const *argv[])
         #pragma omp task
         {
             const RNifti::NiftiImage volume_B1_in_UNI_SPACE_0_to_4095 = RNifti::NiftiImage(
-                config["path_INPUT_b1_faUnit"].template get<std::string>()
+                PATH_B1_MAP
                 , VERBOSE
             );
             eigen_B1_in_UNI_SPACE_relative = B1_TO_RELATIVE_B1<Eigen::ArrayXd, Eigen::ArrayXd>(
