@@ -2,8 +2,8 @@
  * @file main.cpp
  * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
- * @version 1.0
- * @date 2024-03-01
+ * @version 1.1
+ * @date 2024-03-03
  * 
  * @copyright GPLv3 (c) 2024
  * 
