@@ -1,8 +1,5 @@
 #!/usr/bin/bash
 
-PROGRAM=$1
-STATIC_OR_SHARED=$2
-
 ANTSLIBS=(
     -pthread -lstdc++ -Wl,--no-as-needed -ldl
     -ll_antsApplyTransforms
@@ -44,11 +41,10 @@ ITKLIBS=(
     -litkminc2-5.3
     -lITKTransform-5.3
     -lITKCommon-5.3
-    -litkNetlibSlatec-5.3  # Not useful if statically linked
-    -lhdf5_hl_cpp-${STATIC_OR_SHARED}
-    -litkhdf5_hl-${STATIC_OR_SHARED}-5.3
-    -litkhdf5_cpp-${STATIC_OR_SHARED}-5.3
-    -litkhdf5-${STATIC_OR_SHARED}-5.3
+    -lhdf5_hl_cpp-static
+    -litkhdf5_hl-static-5.3
+    -litkhdf5_cpp-static-5.3
+    -litkhdf5-static-5.3
     -litkgdcmMSFF-5.3
     -litkvnl_algo-5.3
     -litkv3p_netlib-5.3
@@ -81,30 +77,31 @@ ITKLIBS=(
 
 CXXFLAGS="-std=c++17"
 
-if [ "$3" = "debug" ]; then
+if [ "$2" = "debug" ]; then
     CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wconversion -Wno-sign-conversion -Wdouble-promotion ${@:5}"
 else
     CPPFLAGS="-fopenmp -O3 ${@:5}"
 fi
-echo ">> ${STATIC_OR_SHARED} $3 compilation <<"
+echo ">> $2 compilation <<"
 
-LIBS="-L./externals/lib/${STATIC_OR_SHARED} -lRNifti -lboost_timer ${ANTSLIBS[@]} ${ITKLIBS[@]}"
+LIBS="-L./externals/lib -lboost_timer ${ANTSLIBS[@]} ${ITKLIBS[@]}"
 INCLUDE="-I./externals/include"
 SRC="./src"
 BIN="./bin"
+PROGRAM=main
 
 echo "g++ ${CXXFLAGS} ${CPPFLAGS}" \
     "${INCLUDE}" \
     "${SRC}/${PROGRAM}.cpp" \
     "${LIBS}" \
     "-o ${BIN}/${PROGRAM}" \
-    "&& ${BIN}/${PROGRAM} $4"
+    "&& ${BIN}/${PROGRAM} $1"
 
 g++ ${CXXFLAGS} ${CPPFLAGS} \
     ${INCLUDE} \
     ${SRC}/${PROGRAM}.cpp \
     ${LIBS} \
     -o ${BIN}/${PROGRAM} \
-    && ${BIN}/${PROGRAM} $4
+    && ${BIN}/${PROGRAM} $1
 
 # -Wno-deprecated-declarations to remove deprecation warnings

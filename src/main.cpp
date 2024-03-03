@@ -133,7 +133,6 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"vref_t1wUNI_vUnit", FLOAT}
         , {"target_b1_faUnit", FLOAT}
         , {"noiseShift", FLOAT}
-        , {"smoothingSigma", FLOAT}
         // MP2RAGE UNI parameters
         , {"t_echoSpacing_msUnit", FLOAT}
         , {"t_repeatMP2RAGE_msUnit", FLOAT}
