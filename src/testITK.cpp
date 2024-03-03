@@ -1,5 +1,6 @@
 #include "src/preprocessing.hpp"
 
+
 int main(int argc, char const *argv[])
 {
     std::string PATH_B1_MAP = "/mnt/c/Users/tanderson/Desktop/b1Correction/cpp/preresliced_01_0008_tfl-b1map-sag-3mm-tar90_c32.nii.gz";
