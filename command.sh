@@ -44,7 +44,7 @@ ITKLIBS=(
     -litkminc2-5.3
     -lITKTransform-5.3
     -lITKCommon-5.3
-    -litkNetlibSlatec-5.3
+    -litkNetlibSlatec-5.3  # Not useful if statically linked
     -lhdf5_hl_cpp-${STATIC_OR_SHARED}
     -litkhdf5_hl-${STATIC_OR_SHARED}-5.3
     -litkhdf5_cpp-${STATIC_OR_SHARED}-5.3
