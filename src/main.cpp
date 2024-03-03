@@ -39,12 +39,12 @@ using access = _access;
 #include "externals/include/json.hpp"
 #include "externals/include/Eigen/Core"
 
-#include "src/mp2rage.h"
-#include "src/interpolate.h"
-#include "src/utils.h"
-#include "src/normalize.h"
-#include "src/denoise.h"
-#include "src/preprocessing.h"
+#include "src/mp2rage.hpp"
+#include "src/interpolate.hpp"
+#include "src/utils.hpp"
+#include "src/normalize.hpp"
+#include "src/denoise.hpp"
+#include "src/preprocessing.hpp"
 
 
 void print_usage()

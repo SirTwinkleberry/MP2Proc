@@ -2,8 +2,8 @@
  * @file utils.h
  * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
- * @version 0.1
- * @date 2024-03-03
+ * @version 1.0
+ * @date 2024-03-01
  * 
  * @copyright GPLv3 (c) 2024
  * 
@@ -19,8 +19,8 @@
 #include "externals/include/RNifti.h"
 #include "externals/include/Eigen/Dense"
 
-#include "src/interpolate.h"
-#include "src/mp2rage.h"
+#include "src/interpolate.hpp"
+#include "src/mp2rage.hpp"
 
 
 template <typename D, typename XT, typename YT, typename ZT>
