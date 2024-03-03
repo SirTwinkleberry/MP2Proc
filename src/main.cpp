@@ -7,12 +7,9 @@
  * 
  * @copyright GPLv3 (c) 2024
  * 
- * @todo registration of B1 onto T1-w UNI
- * https://github.com/nipy/nibabel/blob/acd0c777256b567461910b1ab6330fc6d93727d4/nibabel/processing.py#L81
- * https://github.com/nipy/nibabel/blob/acd0c777256b567461910b1ab6330fc6d93727d4/nibabel/affines.py#L144
- * https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.affine_transform.html
- * @todo smoothing of B1
- * 1D Gaussian Kernel across all dimensions
+ * @todo toggle deprecated normalization in json boolean (default: false)
+ * @todo toggle unified denoising function in json boolean (default: true)
+ * @todo fix zlib linking error using when ANTs and RNifti libraries concurrently
  * @todo docstrings
  * @todo print_usage() function
  * 
