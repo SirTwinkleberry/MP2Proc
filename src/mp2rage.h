@@ -1,3 +1,15 @@
+/**
+ * @file mp2rage.h
+ * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
+ * @brief 
+ * @version 0.1
+ * @date 2024-03-03
+ * 
+ * @copyright GPLv3 (c) 2024
+ * 
+ */
+
+
 #pragma once
 
 #include <cmath>

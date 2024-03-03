@@ -1,3 +1,15 @@
+/**
+ * @file denoise.h
+ * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
+ * @brief 
+ * @version 0.1
+ * @date 2024-03-01
+ * 
+ * @copyright GPLv3 (c) 2024
+ * 
+ */
+
+
 #pragma once
 
 #include <boost/timer/timer.hpp>

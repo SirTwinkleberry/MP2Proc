@@ -1,6 +1,6 @@
 /**
  * @file main.cpp
- * @author Timothy ANDERSON (sirtwinkleberry.com)
+ * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
  * @version 1.0
  * @date 2024-03-01
