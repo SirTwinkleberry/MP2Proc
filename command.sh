@@ -76,8 +76,14 @@ ITKLIBS=(
 )
 
 CXXFLAGS="-std=c++17"
-CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wconversion -Wno-sign-conversion -Wdouble-promotion"
-# CPPFLAGS="-fopenmp -O3"
+
+if [ "$2" = "debug" ]; then
+    CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wconversion -Wno-sign-conversion -Wdouble-promotion ${@:3}"
+    echo ">> DEBUG COMPILATION MODE <<"
+else
+    CPPFLAGS="-fopenmp -O3 ${@:2}"
+    echo ">> RELEASE COMPILATION MODE <<"
+fi
 
 PROGRAM="main"
 
@@ -86,9 +92,18 @@ INCLUDE="-I./externals/include/"
 SRC="./src"
 BIN="./bin"
 
+echo "g++ ${CXXFLAGS} ${CPPFLAGS}" \
+    "${SRC}/${PROGRAM}.cpp" \
+    "${INCLUDE}" \
+    "${LIBS}" \
+    "-o ${BIN}/${PROGRAM}" \
+    "&& ${BIN}/${PROGRAM} $1"
+
 g++ ${CXXFLAGS} ${CPPFLAGS} \
     ${SRC}/${PROGRAM}.cpp \
     ${INCLUDE} \
     ${LIBS} \
     -o ${BIN}/${PROGRAM} \
     && ${BIN}/${PROGRAM} $1
+
+# -Wno-deprecated-declarations to remove deprecation warnings
