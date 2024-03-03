@@ -80,7 +80,6 @@ CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-functi
 # CPPFLAGS="-fopenmp -O3"
 
 PROGRAM="main"
-# PROGRAM=ITKtest
 
 LIBS="-L./externals/lib -lRNifti -lboost_timer ${ANTSLIBS[@]} ${ITKLIBS[@]}"
 INCLUDE="-I./externals/include/"
