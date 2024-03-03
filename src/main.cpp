@@ -44,6 +44,7 @@ using access = _access;
 #include "src/utils.h"
 #include "src/normalize.h"
 #include "src/denoise.h"
+#include "src/preprocessing.h"
 
 
 void print_usage()
@@ -404,12 +405,12 @@ int main(int argc, char const *argv[])
     const std::vector<double> RANGE_B1 = config["array_b1_relativeUnit"].template get<std::vector<double>>();
     const std::vector<double> RANGE_T1 = config["array_qT1_msUnit"].template get<std::vector<double>>();
     const Eigen::ArrayXd B1VectorRange_relative = Eigen::ArrayXd::LinSpaced(
-        RANGE_B1.at(0)
+        (int) RANGE_B1.at(0)
         , RANGE_B1.at(1)
         , RANGE_B1.at(2))
     ;
     const Eigen::ArrayXd QT1VectorRange_in_unit = Eigen::ArrayXd::LinSpaced(
-        RANGE_T1.at(0)
+        (int) RANGE_T1.at(0)
         , RANGE_T1.at(1)
         , RANGE_T1.at(2)
     );
