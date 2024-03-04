@@ -230,7 +230,7 @@ static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool
 template <typename T>
 static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
 {
-    assert(RANGE.first < RANGE.second);
+    assert(min < max);
 
     boost::timer::auto_cpu_timer timer;
 
@@ -243,8 +243,6 @@ static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double min_replacem
     }
 
     T out = T::Zero(ARRAY_TO_MASK.size());
-    double min = RANGE.first;
-    double max = RANGE.second;
 
     for (size_t i = 0 ; i < ARRAY_TO_MASK.size() ; ++i)
     {
