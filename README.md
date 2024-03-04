@@ -3,6 +3,19 @@
 ## Requirements
 - Properly defined parameters file in `JSON` format (cf. `example.json`)
 
+### Runtime dependencies
+- `libboost_timer.so.1.83.0` (Boost Timer shared library to measure performance / elapsed time)
+
+### Usage
+- Install `Boost-1.83.0` on your system, or download the shared library file `libboost_timer.so.1.83.0` in the [Releases](https://gitea.crmbm.univ-amu.fr/ihMT/VolProc/releases) section and move it to your `/usr/local/lib` directory.
+- Run the executable while providing the path to your `JSON` configuration file in the command line:
+
+```shell
+{ROOTDIR}/bin/main {ROOTDIR}/example.json
+```
+
+_This is a header-only library so integrating it to existing C++ code should be as trivial as adding an `#include` to the proper header files (assuming the source dependencies are met)._
+
 ## Hard-coded choices in code base
 - No extrapolation: points beyond interpolant's definition are set to `0.`
 - Propagation of the extrapolation mask to derived volumes except for Synthetic EDGE and its denoised version
@@ -78,19 +91,6 @@
 - RNifti (https://github.com/jonclayden/RNifti)
 - libinterpolate (https://github.com/CD3/libInterpolate)
 - make / g++
-
-### Runtime dependencies
-- `libboost_timer.so.1.83.0` (Boost Timer shared library to measure performance / elapsed time)
-
-### Usage
-- Install `Boost-1.83.0` on your system, or download the shared library file `libboost_timer.so.1.83.0` in the [Releases](https://gitea.crmbm.univ-amu.fr/ihMT/VolProc/releases) section and move it to your `/usr/local/lib` directory.
-- Run the executable while providing the path to your `JSON` configuration file in the command line:
-
-```shell
-{ROOTDIR}/bin/main {ROOTDIR}/example.json
-```
-
-_This is a header-only library so integrating it to existing C++ code should be as trivial as adding an `#include` to the proper header files (assuming the source dependencies are met)._
 
 ### Tested for exact reproduction of previous code
 - [x] $qT_1$
