@@ -61,6 +61,7 @@
 - Multithreading
 
 ## Still needs
+- Fix `boost`'s timer library static linking (#1)
 - Proper `CMakeLists.txt` / `Makefile` with support for tests / release / debug / example
 - Test suite (support for windows / linux)
 - Documentation
