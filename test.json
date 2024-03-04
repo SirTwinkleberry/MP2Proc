@@ -6,7 +6,7 @@
     "do_smoothing_using_median_filtering" : false,
     "is_smoothingSigma_in_spacing_units" : false,
     "do_mask_outside_valid_qT1_range": true,
-    "do_round": true,
+    "do_round_on_export": true,
 
     "compute_b1_resliced_smoothed" : true,
     "compute_t1wUNI_DEN" : true,

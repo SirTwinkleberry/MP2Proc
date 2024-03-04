@@ -124,7 +124,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_smoothing_using_median_filtering", BOOL}
         , {"is_smoothingSigma_in_spacing_units", BOOL}
         , {"do_mask_outside_valid_qT1_range", BOOL}
-        , {"do_round", BOOL}
+        , {"do_round_on_export", BOOL}
 
         , {"compute_b1_resliced_smoothed", BOOL}
         , {"compute_t1wUNI_DEN", BOOL}
@@ -315,7 +315,7 @@ int main(int argc, char const *argv[])
         SOME CONSTANTS
     */
     int VERBOSE = config["verbose"].template get<bool>();
-    int DO_ROUND = config["do_round"].template get<bool>();
+    int DO_ROUND = config["do_round_on_export"].template get<bool>();
     int DATATYPE = config["datatype"].template get<int>();
     int N_THREADS = config["n_threads"].template get<int>();
     std::string PATH_B1_MAP = config["path_INPUT_b1_faUnit"].template get<std::string>();
