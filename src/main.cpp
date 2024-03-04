@@ -122,7 +122,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_transform_B1_map_to_t1wUNI_space", BOOL}
         , {"do_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
         , {"do_smoothing_using_median_filtering", BOOL}
-        , {"is_smoothingSigma_in_spacing_units", BOOL}
+        , {"is_ants_smoothing_sigma_in_spacing_units", BOOL}
         , {"do_mask_outside_valid_qT1_interpolation_range", BOOL}
         , {"do_bound_b1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
@@ -381,7 +381,7 @@ int main(int argc, char const *argv[])
                     , config["path_OUTPUT_b1_resliced_smoothed_faUnit"].template get<std::string>()
                     , 3
                     , config["ants_smoothing_sigma"].template get<std::string>()
-                    , config["is_smoothingSigma_in_spacing_units"].template get<bool>()
+                    , config["is_ants_smoothing_sigma_in_spacing_units"].template get<bool>()
                     , config["do_smoothing_using_median_filtering"].template get<bool>()
                     , VERBOSE)
                 == EXIT_SUCCESS )
