@@ -15,22 +15,35 @@
 - Outputs are given in:
     - $qT_1$ $\rightarrow$ $ms$
     - $qR_1$ $\rightarrow$ $ks^{-1}$
-    - $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[0, \: 4096]$
-    - Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
-    - Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
-    - Denoised $T_1$-w UNI $\rightarrow$ $[0, \: 4096]$
-    - Denoised $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[0, \: 4096]$
-    - Denoised Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
-    - Denoised Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
+    - if `use_deprecated_normalization_from_12bits: true`:
+        - $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[0, \: 4096]$
+        - Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
+        - Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
+        - Denoised $T_1$-w UNI $\rightarrow$ $[0, \: 4096]$
+        - Denoised $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[0, \: 4096]$
+        - Denoised Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
+        - Denoised Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
+    - else if `use_deprecated_normalization_from_12bits: false`:
+        - $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[0, \: 4095]$
+        - Synthetic EDGE $\rightarrow$ $[0, \: 4095]$
+        - Synthetic FLAWS $\rightarrow$ $[0, \: 4095]$
+        - Denoised $T_1$-w UNI $\rightarrow$ $[0, \: 4095]$
+        - Denoised $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[0, \: 4095]$
+        - Denoised Synthetic EDGE $\rightarrow$ $[0, \: 4095]$
+        - Denoised Synthetic FLAWS $\rightarrow$ $[0, \: 4095]$
 - Denoising of ... uses ... range for denoising algorithm:
     - $T_1$-w UNI $\rightarrow$ $[-0.5, \: 0.5]$
     - $B_1$-corrected $T_1$-w UNI $\rightarrow$ $[-0.5, \: 0.5]$
     - if `use_denoising_on_unit_normed_synthetic_maps: true`:
         - Synthetic EDGE $\rightarrow$ $[-0.5, \: 0.5]$
         - Synthetic FLAWS $\rightarrow$ $[-0.5, \: 0.5]$
-    - if `use_denoising_on_unit_normed_synthetic_maps: false`:
-        - Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
-        - Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
+    - else if `use_denoising_on_unit_normed_synthetic_maps: false`:
+        if `use_deprecated_normalization_from_12bits: true`:
+            - Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
+            - Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
+        else if `use_deprecated_normalization_from_12bits: false`:
+            - Synthetic EDGE $\rightarrow$ $[0, \: 4095]$
+            - Synthetic FLAWS $\rightarrow$ $[0, \: 4095]$
 
 
 ## Features included
