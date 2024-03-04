@@ -7,7 +7,8 @@
     "do_smoothing_of_B1_map_in_t1wUNI_space"        : true,
     "do_smoothing_using_median_filtering"           : false,
     "is_smoothingSigma_in_spacing_units"            : false,
-    "do_mask_outside_valid_qT1_range"               : true,
+    "do_mask_outside_valid_qT1_interpolation_range" : true,
+    "do_bound_b1_to_valid_interpolation_range"      : true,
     "do_round_on_export"                            : true,
 
     "compute_b1_resliced_smoothed"                  : true,

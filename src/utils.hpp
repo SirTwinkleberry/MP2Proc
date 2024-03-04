@@ -2,8 +2,8 @@
  * @file utils.h
  * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
- * @version 1.0
- * @date 2024-03-01
+ * @version 1.1
+ * @date 2024-03-04
  * 
  * @copyright GPLv3 (c) 2024
  * 
@@ -228,7 +228,7 @@ static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool
  * @return T 
  */
 template <typename T>
-static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, const std::pair<double, double> &RANGE, bool verbose = true)
+static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
 {
     assert(RANGE.first < RANGE.second);
 
@@ -247,8 +247,13 @@ static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, const std::pair<double, double>
     double max = RANGE.second;
 
     for (size_t i = 0 ; i < ARRAY_TO_MASK.size() ; ++i)
-        out(i) = (ARRAY_TO_MASK(i) < min) || (ARRAY_TO_MASK(i) > max) ? 0 : ARRAY_TO_MASK(i);
-    
+    {
+        // Branchless conditional
+        out(i) = (ARRAY_TO_MASK(i) < min) * min_replacement_value
+        + (ARRAY_TO_MASK(i) > max) * max_replacement_value
+        + (1 - (ARRAY_TO_MASK(i) < min) - (ARRAY_TO_MASK(i) > max)) * ARRAY_TO_MASK(i);
+    }
+
     return out;
 }
 
@@ -608,9 +613,9 @@ static Eigen::ArrayXd MASK_FROM_REFERENCE(const Eigen::ArrayXd &ARRAY_TO_MASK, c
 /**
  * @brief Overload of `MASK_FROM_RANGE<XT, YT>(...)`
  */
-static Eigen::ArrayXd MASK_FROM_RANGE(const Eigen::ArrayXd &ARRAY_TO_MASK, const std::pair<double, double> &RANGE, bool verbose = true)
+static Eigen::ArrayXd MASK_FROM_RANGE(const Eigen::ArrayXd &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
 {
-    return MASK_FROM_RANGE<Eigen::ArrayXd>(ARRAY_TO_MASK, RANGE, verbose); 
+    return MASK_FROM_RANGE<Eigen::ArrayXd>(ARRAY_TO_MASK, min, min_replacement_value, max, max_replacement_value, verbose); 
 }
 
 /**

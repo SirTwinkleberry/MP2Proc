@@ -2,8 +2,8 @@
  * @file main.cpp
  * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
- * @version 1.1
- * @date 2024-03-03
+ * @version 1.2
+ * @date 2024-03-04
  * 
  * @copyright GPLv3 (c) 2024
  * 
@@ -123,7 +123,8 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
         , {"do_smoothing_using_median_filtering", BOOL}
         , {"is_smoothingSigma_in_spacing_units", BOOL}
-        , {"do_mask_outside_valid_qT1_range", BOOL}
+        , {"do_mask_outside_valid_qT1_interpolation_range", BOOL}
+        , {"do_bound_b1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
 
         , {"compute_b1_resliced_smoothed", BOOL}
@@ -324,7 +325,8 @@ int main(int argc, char const *argv[])
         int DATATYPE = config["datatype"].template get<int>();
         int N_THREADS = config["n_threads"].template get<int>();
         std::string PATH_B1_MAP = config["path_INPUT_b1_faUnit"].template get<std::string>();
-        
+        const std::vector<double> RANGE_B1 = config["array_b1_relativeUnit"].template get<std::vector<double>>();
+        const std::vector<double> RANGE_T1 = config["array_qT1_msUnit"].template get<std::vector<double>>();
 
         /*
             BRINGING VARIABLES INTO SCOPE
@@ -446,6 +448,16 @@ int main(int argc, char const *argv[])
                     , config["vref_t1wUNI_vUnit"].template get<double>()
                     , VERBOSE
                 );
+
+                if ( config["do_bound_b1_to_valid_interpolation_range"].template get<bool>() )
+                    eigen_B1_in_UNI_SPACE_relative = MASK_FROM_RANGE<Eigen::ArrayXd>(
+                        eigen_B1_in_UNI_SPACE_relative
+                        , RANGE_B1.at(1)
+                        , RANGE_B1.at(1)
+                        , RANGE_B1.at(2)
+                        , RANGE_B1.at(2)
+                        , VERBOSE
+                    );
             }
 
 
@@ -502,8 +514,6 @@ int main(int argc, char const *argv[])
             - DEFINING 2 RANGES: (X (no unit), Y (ms))
             - INITIALIZING INTERPOLANT FROM THESE RANGES
          */
-        const std::vector<double> RANGE_B1 = config["array_b1_relativeUnit"].template get<std::vector<double>>();
-        const std::vector<double> RANGE_T1 = config["array_qT1_msUnit"].template get<std::vector<double>>();
         const Eigen::ArrayXd B1VectorRange_relative = Eigen::ArrayXd::LinSpaced(
             (int) RANGE_B1.at(0)
             , RANGE_B1.at(1)
@@ -546,8 +556,15 @@ int main(int argc, char const *argv[])
             , VERBOSE
         );
 
-        if ( config["do_mask_outside_valid_qT1_range"].template get<bool>() )
-            data_QT1_in_unit = MASK_FROM_RANGE<Eigen::ArrayXd>(data_QT1_in_unit, bijectivity_range, VERBOSE);
+        if ( config["do_mask_outside_valid_qT1_interpolation_range"].template get<bool>() )
+            data_QT1_in_unit = MASK_FROM_RANGE<Eigen::ArrayXd>(
+                data_QT1_in_unit
+                , bijectivity_range.first
+                , 0
+                , bijectivity_range.second
+                , 0
+                , VERBOSE
+            );
 
         if ( config["compute_qT1"].template get<bool>() )
         {
