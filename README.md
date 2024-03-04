@@ -83,7 +83,12 @@
 - `libboost_timer.so.1.83.0` (Boost Timer shared library to measure performance / elapsed time)
 
 ### Usage
-`$ {ROOTDIR}/bin/main {ROOTDIR}/example.json`
+- Install `Boost-1.83.0` on your system, or download the shared library file `libboost_timer.so.1.83.0` in the [Releases](https://gitea.crmbm.univ-amu.fr/ihMT/VolProc/releases) section and move it to your `/usr/local/lib` directory.
+- Run the executable while providing the path to your `JSON` configuration file in the command line:
+
+```shell
+{ROOTDIR}/bin/main {ROOTDIR}/example.json
+```
 
 _This is a header-only library so integrating it to existing C++ code should be as trivial as adding an `#include` to the proper header files (assuming the source dependencies are met)._
 
