@@ -124,7 +124,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_smoothing_using_median_filtering", BOOL}
         , {"is_ants_smoothing_sigma_in_spacing_units", BOOL}
         , {"do_mask_outside_valid_qT1_interpolation_range", BOOL}
-        , {"do_bound_b1_to_valid_interpolation_range", BOOL}
+        , {"do_bound_B1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
 
         , {"compute_t1wUNI_DEN", BOOL}
