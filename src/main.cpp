@@ -127,7 +127,6 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_bound_b1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
 
-        , {"compute_b1_resliced_smoothed", BOOL}
         , {"compute_t1wUNI_DEN", BOOL}
         , {"compute_t1wUNI_B1Corrected", BOOL}
         , {"compute_t1wUNI_B1Corrected_DEN", BOOL}
@@ -146,6 +145,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
 
         , {"path_OUTPUT_b1_resliced_faUnit", OUTPUT}
         , {"path_OUTPUT_b1_resliced_smoothed_faUnit", OUTPUT}
+        , {"path_OUTPUT_b1_processed_prct", OUTPUT}
         , {"path_OUTPUT_t1wUNI_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_t1wUNI_B1Corrected_dicomUnit", OUTPUT}
         , {"path_OUTPUT_t1wUNI_B1Corrected_DEN_dicomUnit", OUTPUT}
@@ -884,8 +884,17 @@ int main(int argc, char const *argv[])
 
 
         /*
-            EXPORT TO FILES
+            BRING PROCESSED B1 MAP FROM RELATIVE TO PERCENT LEVELS
+            EXPORT ALL MAPS TO DISK
          */
+        eigen_B1_in_UNI_SPACE_relative = eigen_B1_in_UNI_SPACE_relative.array() * 100.;
+        export_vector.push_back(
+            std::pair<std::string, Eigen::ArrayXd*>(
+                config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                , &eigen_B1_in_UNI_SPACE_relative
+            )
+        );
+
         EXPORT_RESULTS<Eigen::ArrayXd>(
             export_vector
             , volume_T1W_UNI_0_to_4095
