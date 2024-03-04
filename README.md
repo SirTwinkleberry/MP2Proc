@@ -80,7 +80,7 @@
 - make / g++
 
 ### Runtime dependencies
-- None (should be statically built)
+- `libboost_timer.so.1.83.0` (Boost Timer shared library to measure performance / elapsed time)
 
 ### Usage
 `$ {ROOTDIR}/bin/main {ROOTDIR}/example.json`
