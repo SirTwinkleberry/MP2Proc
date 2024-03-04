@@ -1,8 +1,8 @@
 {
     "verbose"                                       : true,
 
-    "use_deprecated_normalization_from_12bits"      : true,
-    "use_denoising_on_unit_normed_synthetic_maps"   : false,
+    "use_deprecated_normalization_from_12bits"      : false,
+    "use_denoising_on_unit_normed_synthetic_maps"   : true,
     "do_transform_B1_map_to_t1wUNI_space"           : true,
     "do_smoothing_of_B1_map_in_t1wUNI_space"        : true,
     "do_smoothing_using_median_filtering"           : false,
@@ -84,7 +84,6 @@
     "flaws2_M0"                                     : 1.0,
 
 
-    "bitpix"                                        : 16,
     "datatype"                                      : 512,
     "n_threads"                                     : 10,
 

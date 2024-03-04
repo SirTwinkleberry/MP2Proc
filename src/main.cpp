@@ -201,7 +201,6 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"flaws2_M0", FLOAT}
 
         /* INT PARAMETERS */
-        , {"bitpix", INT}
         , {"datatype", INT}
         , {"n_threads", INT}
         // MP2RAGE UNI parameters
