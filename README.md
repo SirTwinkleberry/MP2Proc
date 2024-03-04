@@ -72,7 +72,7 @@
 ## Usage
 `$ {ROOTDIR}/bin/main {ROOTDIR}/example.json`
 
-_This is a header-only library so integrating it to existing C++ code should be as trivial as adding an `#include# to the proper header files (assuming the source dependencies are met)._
+_This is a header-only library so integrating it to existing C++ code should be as trivial as adding an `#include` to the proper header files (assuming the source dependencies are met)._
 
 ## Future
 - GUI?
