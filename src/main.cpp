@@ -684,6 +684,7 @@ int main(int argc, char const *argv[])
         );
     }
 
+
     /* 
         GENERATING THE MAP: SYNTHETIC EDGE
         USING DEFAULT PARAMETRIZATION
@@ -725,7 +726,6 @@ int main(int argc, char const *argv[])
             );
         }
 
-
         /* 
             GENERATING THE MAP: SYNTHETIC EDGE - DENOISED
             MAKING IT INTO AN STD VECTOR OF DOUBLE
@@ -748,6 +748,7 @@ int main(int argc, char const *argv[])
             );
         }
     }
+
 
     /* 
         GENERATING THE MAP: SYNTHETIC FLAWS
@@ -802,7 +803,6 @@ int main(int argc, char const *argv[])
                 )
             );
         }
-
 
         /* 
             GENERATING THE MAP: SYNTHETIC FLAWS - DENOISED
