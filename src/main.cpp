@@ -119,6 +119,8 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         /* BOOL PARAMETERS */
         {"verbose", BOOL}
 
+        , {"use_deprecated_normalization_from_12bits", BOOL}
+        , {"use_denoising_on_unit_normed_synthetic_maps", BOOL}
         , {"do_transform_B1_map_to_t1wUNI_space", BOOL}
         , {"do_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
         , {"do_smoothing_using_median_filtering", BOOL}
@@ -314,8 +316,10 @@ int main(int argc, char const *argv[])
     /*
         SOME CONSTANTS
     */
-    int VERBOSE = config["verbose"].template get<bool>();
-    int DO_ROUND = config["do_round_on_export"].template get<bool>();
+    bool VERBOSE = config["verbose"].template get<bool>();
+    bool USE_DEPRECATED = config["use_deprecated_normalization_from_12bits"].template get<bool>();
+    bool UNIFIED_DENOISE = config["use_denoising_on_unit_normed_synthetic_maps"].template get<bool>();
+    bool DO_ROUND = config["do_round_on_export"].template get<bool>();
     int DATATYPE = config["datatype"].template get<int>();
     int N_THREADS = config["n_threads"].template get<int>();
     std::string PATH_B1_MAP = config["path_INPUT_b1_faUnit"].template get<std::string>();
@@ -328,14 +332,11 @@ int main(int argc, char const *argv[])
     Eigen::ArrayXd eigen_B1_in_UNI_SPACE_relative;
     Eigen::ArrayXd eigen_T1W_INV1_0_to_4095;
     Eigen::ArrayXd eigen_T1W_INV2_0_to_4095;
-    Eigen::ArrayXd data_QR1_in_pkunit;
-    Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_masked;
-    Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked;
-    Eigen::ArrayXd eigen_T1W_UNI_0_TO_4095_denoised;
-    Eigen::ArrayXd SYN_EDGE_0_TO_4095;
-    Eigen::ArrayXd SYN_EDGE_0_TO_4095_denoised;
-    Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked;
-    Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked_denoised;
+    // Eigen::ArrayXd data_QR1_in_pkunit;
+    // Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_masked;
+    // Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked;
+    // Eigen::ArrayXd SYN_EDGE_0_TO_4095_denoised;
+    // Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked_denoised;
 
     boost::timer::auto_cpu_timer timer;
     std::vector<std::pair<std::string, Eigen::ArrayXd*>> export_vector;
@@ -389,7 +390,7 @@ int main(int argc, char const *argv[])
     */
     const RNifti::NiftiImage volume_T1W_UNI_0_to_4095 = RNifti::NiftiImage(
         config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
-        , VERBOSE
+        , true
     );
     std::vector<double> VECTOR = volume_T1W_UNI_0_to_4095.getData<double>();
     const size_t SIZE = VECTOR.size();
@@ -399,13 +400,22 @@ int main(int argc, char const *argv[])
     {
         #pragma omp task
         {
-            eigen_T1W_UNI_centered = TO_UNI_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(
-                Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
-                    VECTOR.data(),
-                    SIZE
-                )
-                , VERBOSE
-            );
+            if ( USE_DEPRECATED )
+                eigen_T1W_UNI_centered = TO_UNI_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(
+                    Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                        VECTOR.data(),
+                        SIZE
+                    )
+                    , VERBOSE
+                );
+            else
+                eigen_T1W_UNI_centered = TO_UNI_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(
+                    Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                        VECTOR.data(),
+                        SIZE
+                    )
+                    , VERBOSE
+                );
         }
 
 
@@ -419,7 +429,7 @@ int main(int argc, char const *argv[])
         {
             const RNifti::NiftiImage volume_B1_in_UNI_SPACE_0_to_4095 = RNifti::NiftiImage(
                 PATH_B1_MAP
-                , VERBOSE
+                , true
             );
             eigen_B1_in_UNI_SPACE_relative = B1_TO_RELATIVE_B1<Eigen::ArrayXd, Eigen::ArrayXd>(
                 Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
@@ -452,7 +462,7 @@ int main(int argc, char const *argv[])
             {
                 const RNifti::NiftiImage volume_T1W_INV1_0_to_4095 = RNifti::NiftiImage(
                     config["path_INPUT_inversion_1_msUnit"].template get<std::string>()
-                    , VERBOSE
+                    , true
                 );
                 eigen_T1W_INV1_0_to_4095 = Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
                     volume_T1W_INV1_0_to_4095.getData<double>().data()
@@ -469,7 +479,7 @@ int main(int argc, char const *argv[])
             {
                 const RNifti::NiftiImage volume_T1W_INV2_0_to_4095 = RNifti::NiftiImage(
                     config["path_INPUT_inversion_2_msUnit"].template get<std::string>()
-                    , VERBOSE
+                    , true
                 );
                 eigen_T1W_INV2_0_to_4095 = Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
                     volume_T1W_INV2_0_to_4095.getData<double>().data()
@@ -521,8 +531,7 @@ int main(int argc, char const *argv[])
     /* 
         GENERATING THE MAP: QT1 (ms)
         MAKING IT INTO AN STD VECTOR OF DOUBLE
-        ROUNDING IT
-        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
     */
     Eigen::ArrayXd data_QT1_in_unit = COMPUTE_QT1MAP_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
         interp
@@ -543,26 +552,17 @@ int main(int argc, char const *argv[])
                 , &data_QT1_in_unit
             )
         );
-        // DATA_TO_FILE<double, Eigen::ArrayXd>(
-            // config["path_OUTPUT_qT1_msUnit"].template get<std::string>()
-            // , data_QT1_in_unit
-            // , volume_T1W_UNI_0_to_4095
-            // , DATATYPE
-            // , true
-            // , VERBOSE
-        // );
     }
 
 
     /* 
         GENERATING THE MAP: QR1 ((ms)^-1) AND RESCALING IT BY 10^6 ((ms)^-1 -> (ks)^-1)
         MAKING IT INTO AN STD VECTOR OF DOUBLE
-        ROUNDING IT
-        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
     */
     if ( config["compute_qR1"].template get<bool>() )
     {
-        data_QR1_in_pkunit = (Eigen::ArrayXd) (1e6 * COMPUTE_QR1MAP_IN_PER_UNIT<Eigen::ArrayXd, Eigen::ArrayXd>(
+        Eigen::ArrayXd data_QR1_in_pkunit = (Eigen::ArrayXd) (1e6 * COMPUTE_QR1MAP_IN_PER_UNIT<Eigen::ArrayXd, Eigen::ArrayXd>(
             data_QT1_in_unit.array()
             , VERBOSE
         ).array());
@@ -573,15 +573,6 @@ int main(int argc, char const *argv[])
                 , &data_QR1_in_pkunit
             )
         );
-
-        // DATA_TO_FILE<double, Eigen::ArrayXd>(
-            // config["path_OUTPUT_qR1_pksUnit"].template get<std::string>()
-            // , data_QR1_in_pkunit
-            // , volume_T1W_UNI_0_to_4095
-            // , DATATYPE
-            // , true
-            // , VERBOSE
-        // );
     }
 
 
@@ -590,12 +581,11 @@ int main(int argc, char const *argv[])
         RESCALING IT
         MASKING IT
         MAKING IT INTO AN STD VECTOR OF DOUBLE
-        ROUNDING IT
-        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
     */
     if ( config["compute_t1wUNI_B1Corrected"].template get<bool>() || config["compute_t1wUNI_B1Corrected_DEN"].template get<bool>() )
     {
-        auto data_T1W_UNI_CORRECTED_centered = COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
+        Eigen::ArrayXd data_T1W_UNI_CORRECTED_centered = COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
             data_QT1_in_unit
             , config["t_inversion1_msUnit"].template get<double>()
             , config["t_inversion2_msUnit"].template get<double>()
@@ -613,9 +603,14 @@ int main(int argc, char const *argv[])
 
         if ( config["compute_t1wUNI_B1Corrected"].template get<bool>() )
         {
-            auto data_T1W_UNI_CORRECTED_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered.matrix().reshaped(), VERBOSE);
+            Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095;
 
-            data_T1W_UNI_CORRECTED_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095, data_QT1_in_unit, VERBOSE);
+            if ( USE_DEPRECATED )
+                data_T1W_UNI_CORRECTED_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered.matrix().reshaped(), VERBOSE);
+            else
+                data_T1W_UNI_CORRECTED_0_TO_4095 = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered.matrix().reshaped(), VERBOSE);
+
+            Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095, data_QT1_in_unit, VERBOSE);
 
             export_vector.push_back(
                 std::pair<std::string, Eigen::ArrayXd*>(
@@ -623,36 +618,31 @@ int main(int argc, char const *argv[])
                     , &data_T1W_UNI_CORRECTED_0_TO_4095_masked
                 )
             );
-
-            // DATA_TO_FILE<double, Eigen::ArrayXd>(
-                // config["path_OUTPUT_t1wUNI_B1Corrected_dicomUnit"].template get<std::string>()
-                // , data_T1W_UNI_CORRECTED_0_TO_4095_masked
-                // , volume_T1W_UNI_0_to_4095
-                // , DATATYPE
-                // , true
-                // , VERBOSE
-            // );
         }
     
         /* 
             GENERATING THE MAP: T1W UNI - BACK B1-CORRECTED AND DENOISED
             RESCALING IT
             MAKING IT INTO AN STD VECTOR OF DOUBLE
-            ROUNDING IT
-            EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+            MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
         */
         if ( config["compute_t1wUNI_B1Corrected_DEN"].template get<bool>() )
         {
-            auto data_T1W_UNI_CORRECTED_centered_denoised = DENOISE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+            Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_denoised;
+
+            Eigen::ArrayXd data_T1W_UNI_CORRECTED_centered_denoised = DENOISE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
                 data_T1W_UNI_CORRECTED_centered.matrix().reshaped()
                 , eigen_T1W_INV1_0_to_4095
                 , eigen_T1W_INV2_0_to_4095
                 , config["noiseShift"].template get<double>()
                 , VERBOSE);
 
-            auto data_T1W_UNI_CORRECTED_0_TO_4095_denoised = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered_denoised.matrix().reshaped(), VERBOSE);
+            if ( USE_DEPRECATED )
+                data_T1W_UNI_CORRECTED_0_TO_4095_denoised = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered_denoised.matrix().reshaped(), VERBOSE);
+            else
+                data_T1W_UNI_CORRECTED_0_TO_4095_denoised = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered_denoised.matrix().reshaped(), VERBOSE);
 
-            data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095_denoised, data_QT1_in_unit, VERBOSE);
+            Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095_denoised, data_QT1_in_unit, VERBOSE);
        
             export_vector.push_back(
                 std::pair<std::string, Eigen::ArrayXd*>(
@@ -660,15 +650,6 @@ int main(int argc, char const *argv[])
                     , &data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked
                 )
             );
-
-            // DATA_TO_FILE<double, Eigen::ArrayXd>(
-                // config["path_OUTPUT_t1wUNI_B1Corrected_DEN_dicomUnit"].template get<std::string>()
-                // , data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked
-                // , volume_T1W_UNI_0_to_4095
-                // , DATATYPE
-                // , true
-                // , VERBOSE
-            // );
         }
     }
 
@@ -677,19 +658,23 @@ int main(int argc, char const *argv[])
         GENERATING THE MAP: T1W UNI (ORIGINAL) - DENOISED
         RESCALING IT
         MAKING IT INTO AN STD VECTOR OF DOUBLE
-        ROUNDING IT
-        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
     */
     if ( config["compute_t1wUNI_DEN"].template get<bool>() )
     {
-        auto eigen_T1W_UNI_centered_denoised = DENOISE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+        Eigen::ArrayXd eigen_T1W_UNI_0_TO_4095_denoised;
+
+        Eigen::ArrayXd eigen_T1W_UNI_centered_denoised = DENOISE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
             eigen_T1W_UNI_centered.matrix().reshaped()
             , eigen_T1W_INV1_0_to_4095
             , eigen_T1W_INV2_0_to_4095
             , config["noiseShift"].template get<double>()
             , VERBOSE);
-
-        eigen_T1W_UNI_0_TO_4095_denoised = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(eigen_T1W_UNI_centered_denoised.matrix().reshaped(), VERBOSE);
+        
+        if ( USE_DEPRECATED )
+            eigen_T1W_UNI_0_TO_4095_denoised = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(eigen_T1W_UNI_centered_denoised.matrix().reshaped(), VERBOSE);
+        else
+            eigen_T1W_UNI_0_TO_4095_denoised = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(eigen_T1W_UNI_centered_denoised.matrix().reshaped(), VERBOSE);
 
         export_vector.push_back(
             std::pair<std::string, Eigen::ArrayXd*>(
@@ -697,15 +682,6 @@ int main(int argc, char const *argv[])
                 , &eigen_T1W_UNI_0_TO_4095_denoised
             )
         );
-
-        // DATA_TO_FILE<double, Eigen::ArrayXd>(
-            // config["path_OUTPUT_t1wUNI_DEN_dicomUnit"].template get<std::string>()
-            // , eigen_T1W_UNI_0_TO_4095_denoised
-            // , volume_T1W_UNI_0_to_4095
-            // , DATATYPE
-            // , true
-            // , VERBOSE
-        // );
     }
 
     /* 
@@ -713,12 +689,13 @@ int main(int argc, char const *argv[])
         USING DEFAULT PARAMETRIZATION
         RESCALING IT
         MAKING IT INTO AN STD VECTOR OF DOUBLE
-        ROUNDING IT
-        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
     */
     if ( config["compute_EDGE"].template get<bool>() || config["compute_EDGE_DEN"].template get<bool>() )
     {
-        auto SYN_EDGE = EDGE_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
+        Eigen::ArrayXd SYN_EDGE_0_TO_4095;
+
+        Eigen::ArrayXd SYN_EDGE = EDGE_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
             data_QT1_in_unit.matrix().reshaped()
             , config["edge_t_inversion1_msUnit"].template get<double>()
             , config["edge_t_inversion2_msUnit"].template get<double>()
@@ -733,7 +710,10 @@ int main(int argc, char const *argv[])
             , N_THREADS
             , VERBOSE);
 
-        SYN_EDGE_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_EDGE.matrix().reshaped(), VERBOSE);
+        if ( USE_DEPRECATED )
+            SYN_EDGE_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_EDGE.matrix().reshaped(), VERBOSE);
+        else
+            SYN_EDGE_0_TO_4095 = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_EDGE.matrix().reshaped(), VERBOSE);
 
         if ( config["compute_EDGE"].template get<bool>())
         {
@@ -743,27 +723,17 @@ int main(int argc, char const *argv[])
                     , &SYN_EDGE_0_TO_4095
                 )
             );
-
-            // DATA_TO_FILE<double, Eigen::ArrayXd>(
-                // config["path_OUTPUT_EDGE_dicomUnit"].template get<std::string>()
-                // , SYN_EDGE_0_TO_4095
-                // , volume_T1W_UNI_0_to_4095
-                // , DATATYPE
-                // , true
-                // , VERBOSE
-            // );
         }
 
 
         /* 
             GENERATING THE MAP: SYNTHETIC EDGE - DENOISED
             MAKING IT INTO AN STD VECTOR OF DOUBLE
-            ROUNDING IT
-            EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+            MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
         */
         if ( config["compute_EDGE_DEN"].template get<bool>() )
         {
-            SYN_EDGE_0_TO_4095_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+            Eigen::ArrayXd SYN_EDGE_0_TO_4095_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
                 SYN_EDGE_0_TO_4095.matrix().reshaped()
                 , eigen_T1W_INV1_0_to_4095
                 , eigen_T1W_INV2_0_to_4095
@@ -776,15 +746,6 @@ int main(int argc, char const *argv[])
                     , &SYN_EDGE_0_TO_4095_denoised
                 )
             );
-
-            // DATA_TO_FILE<double, Eigen::ArrayXd>(
-                // config["path_OUTPUT_EDGE_DEN_dicomUnit"].template get<std::string>()
-                // , SYN_EDGE_0_TO_4095_denoised
-                // , volume_T1W_UNI_0_to_4095
-                // , DATATYPE
-                // , true
-                // , VERBOSE
-            // );
         }
     }
 
@@ -794,12 +755,13 @@ int main(int argc, char const *argv[])
         RESCALING IT
         MASKING IT
         MAKING IT INTO AN STD VECTOR OF DOUBLE
-        ROUNDING IT
-        EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+        MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
     */
     if ( config["compute_FLAWS"].template get<bool>() || config["compute_EDGE_DEN"].template get<bool>() )
     {
-        auto SYN_FLAWS = FLAWS_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
+        Eigen::ArrayXd SYN_FLAWS_0_TO_4095;
+
+        Eigen::ArrayXd SYN_FLAWS = FLAWS_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
             data_QT1_in_unit.matrix().reshaped()
             , config["flaws1_t_inversion1_msUnit"].template get<double>()
             , config["flaws1_t_inversion2_msUnit"].template get<double>()
@@ -824,9 +786,12 @@ int main(int argc, char const *argv[])
             , N_THREADS
             , VERBOSE);
 
-        auto SYN_FLAWS_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS.matrix().reshaped(), VERBOSE);
+        if ( USE_DEPRECATED )
+            SYN_FLAWS_0_TO_4095 = TO_12BITS_RANGE_DEPRECATED<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS.matrix().reshaped(), VERBOSE);
+        else
+            SYN_FLAWS_0_TO_4095 = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS.matrix().reshaped(), VERBOSE);
 
-        SYN_FLAWS_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS_0_TO_4095, data_QT1_in_unit, VERBOSE);
+        Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS_0_TO_4095, data_QT1_in_unit, VERBOSE);
 
         if ( config["compute_FLAWS"].template get<bool>() )
         {
@@ -836,27 +801,17 @@ int main(int argc, char const *argv[])
                     , &SYN_FLAWS_0_TO_4095_masked
                 )
             );
-
-            // DATA_TO_FILE<double, Eigen::ArrayXd>(
-                // config["path_OUTPUT_FLAWS_dicomUnit"].template get<std::string>()
-                // , SYN_FLAWS_0_TO_4095_masked
-                // , volume_T1W_UNI_0_to_4095
-                // , DATATYPE
-                // , true
-                // , VERBOSE
-            // );
         }
 
 
         /* 
             GENERATING THE MAP: SYNTHETIC FLAWS - DENOISED
             MAKING IT INTO AN STD VECTOR OF DOUBLE
-            ROUNDING IT
-            EXPORTING IT TO A NIFTI FILE WITH TYPE UINT16
+            MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
         */
         if ( config["compute_FLAWS_DEN"].template get<bool>() )
         {
-            SYN_FLAWS_0_TO_4095_masked_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+            Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
                 SYN_FLAWS_0_TO_4095_masked.matrix().reshaped()
                 , eigen_T1W_INV1_0_to_4095
                 , eigen_T1W_INV2_0_to_4095
@@ -865,19 +820,10 @@ int main(int argc, char const *argv[])
 
             export_vector.push_back(
                 std::pair<std::string, Eigen::ArrayXd*>(
-                    config["path_OUTPUT_qR1_pksUnit"].template get<std::string>()
-                    , &data_QR1_in_pkunit
+                    config["path_OUTPUT_FLAWS_DEN_dicomUnit"].template get<std::string>()
+                    , &SYN_FLAWS_0_TO_4095_masked_denoised
                 )
             );
-
-            // DATA_TO_FILE<double, Eigen::ArrayXd>(
-                // config["path_OUTPUT_FLAWS_DEN_dicomUnit"].template get<std::string>()
-                // , SYN_FLAWS_0_TO_4095_masked_denoised
-                // , volume_T1W_UNI_0_to_4095
-                // , DATATYPE
-                // , true
-                // , VERBOSE
-            // );
         }
     }
 
