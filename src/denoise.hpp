@@ -66,7 +66,7 @@ static T1 DENOISE_ALT(const T1 &data_noisy_0_to_4095, const T2 &data_at_Inversio
     boost::timer::auto_cpu_timer timer;
 
     if (verbose)
-        std::cout << "Standard denoising with epsilon = " << epsilon << " for noisy data in range [0, 4095]" << std::endl;
+        std::cout << "Alternative denoising with epsilon = " << epsilon << " for noisy data in range [0, 4095]" << std::endl;
 
     auto SUM_INVSQ = data_at_Inversion1_0_to_4095.array().square() + data_at_Inversion2_0_to_4095.array().square();
     return (T1) ((data_noisy_0_to_4095.array() * SUM_INVSQ.array()) / (2 * epsilon * epsilon + SUM_INVSQ.array()));

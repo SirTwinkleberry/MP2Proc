@@ -118,7 +118,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         {"verbose", BOOL}
 
         , {"use_deprecated_normalization_from_12bits", BOOL}
-        , {"use_denoising_on_unit_normed_synthetic_maps", BOOL}
+        , {"use_alternative_denoising_on_synthetic_maps", BOOL}
         , {"do_transform_B1_map_to_t1wUNI_space", BOOL}
         , {"do_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
         , {"do_smoothing_using_median_filtering", BOOL}
@@ -320,7 +320,7 @@ int main(int argc, char const *argv[])
          */
         VERBOSE = config["verbose"].template get<bool>();
         bool USE_DEPRECATED = config["use_deprecated_normalization_from_12bits"].template get<bool>();
-        bool UNIFIED_DENOISE = config["use_denoising_on_unit_normed_synthetic_maps"].template get<bool>();
+        bool UNIFIED_DENOISE = !config["use_alternative_denoising_on_synthetic_maps"].template get<bool>();
         bool DO_ROUND = config["do_round_on_export"].template get<bool>();
         int DATATYPE = config["datatype"].template get<int>();
         int N_THREADS = config["n_threads"].template get<int>();
