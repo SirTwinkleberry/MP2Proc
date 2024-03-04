@@ -62,11 +62,11 @@
 
 ## Still needs
 - Fix `boost`'s timer library static linking (#1)
-- Proper `CMakeLists.txt` / `Makefile` with support for tests / release / debug / example
-- Test suite (support for windows / linux)
-- Documentation
-- Copyright and Credits header in files
-- README / Wiki
+- Proper `CMakeLists.txt` / `Makefile` with support for tests / release / debug / example (#2)
+- Test suite (support for windows / linux) (#3)
+- Documentation (#4)
+- Copyright and Credits header in files (#5)
+- README / Wiki (#6)
 
 
 ## Misc
