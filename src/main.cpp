@@ -335,6 +335,7 @@ int main(int argc, char const *argv[])
         if ( ANTS_SMOOTH_IMAGE(
                 PATH_B1_MAP
                 , config["path_OUTPUT_b1_resliced_smoothed_faUnit"].template get<std::string>()
+                , 3
                 , config["ants_smoothing_sigma"].template get<std::string>()
                 , config["is_smoothingSigma_in_spacing_units"].template get<bool>()
                 , config["do_smoothing_using_median_filtering"].template get<bool>()

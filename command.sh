@@ -78,12 +78,12 @@ ITKLIBS=(
 CXXFLAGS="-std=c++17"
 
 if [ "$2" = "debug" ]; then
-    CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wconversion -Wno-sign-conversion -Wdouble-promotion ${@:5}"
+    echo ">> DEBUG MODE COMPILATION <<"
+    CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wconversion -Wno-sign-conversion -Wdouble-promotion ${@:3}"
 else
-    CPPFLAGS="-fopenmp -O3 ${@:5}"
+    echo ">> RELEASE MODE COMPILATION <<"
+    CPPFLAGS="-fopenmp -O3 ${@:2}"
 fi
-echo ">> $2 compilation <<"
-
 LIBS="-L./externals/lib -lboost_timer ${ANTSLIBS[@]} ${ITKLIBS[@]}"
 INCLUDE="-I./externals/include"
 SRC="./src"

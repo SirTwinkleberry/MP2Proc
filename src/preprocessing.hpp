@@ -13,6 +13,7 @@
 #include <vector>       // Necessary for ANTs somehow
 #include <string>       // Necessary for ANTs somehow
 #include <iostream>     // Necessary for ANTs somehow
+#include <boost/timer/timer.hpp>
 
 #include "externals/include/ANTs/antsApplyTransforms.h"
 #include "externals/include/ANTs/SmoothImage.h"
@@ -35,10 +36,27 @@
  */
 static int ANTS_APPLY_TRANSFORMS(const std::string &input, const std::string &reference, const std::string &output, const std::string &output_datatype = "default", const std::string &transforms = "identity", const std::string &interpolation = "BSpline[3]", double default_value = 0, ushort dim = 3, ushort input_imgtype = 0, bool verbose = true)
 {
+    boost::timer::auto_cpu_timer timer;
+
     std::vector<std::string> TRANSFORMS_VECTOR;
     
     if (verbose)
     {
+        std::cout << "=======================================================" << "\n" 
+                  << "===== Computing transformed volume from reference =====" << "\n"
+                  << "=======================================================" << "\n"
+                  << "Using ANTs software   `antsApplyTransforms`   with:"     << "\n"
+                  << "Number of dimensions       : " << dim                    << "\n"
+                  << "ANTs volume type code      : " << input_imgtype          << "\n"
+                  << "Output datatype            : " << output_datatype        << "\n"
+                  << "Transforms array           : " << transforms             << "\n"
+                  << "Interpolation method       : " << interpolation          << "\n"
+                  << "Default extrapolation value: " << default_value          << "\n"
+                  << "Input volume               : " << input                  << "\n"
+                  << "Reference volume           : " << reference              << "\n"
+                  << "Output volume              : " << output
+                  << std::endl;
+
         TRANSFORMS_VECTOR.push_back("-v");
         TRANSFORMS_VECTOR.push_back("1");
     }
@@ -77,11 +95,27 @@ static int ANTS_APPLY_TRANSFORMS(const std::string &input, const std::string &re
  * @param verbose 
  * @return int 
  */
-static int ANTS_SMOOTH_IMAGE(const std::string &input, const std::string &output, std::string sigma = "1x1x1", bool is_sigma_in_spacing_units = false, bool use_median_filtering = false, bool verbose = true)
+static int ANTS_SMOOTH_IMAGE(const std::string &input, const std::string &output, ushort dim = 3, std::string sigma = "1x1x1", bool is_sigma_in_spacing_units = false, bool use_median_filtering = false, bool verbose = true)
 {
+    boost::timer::auto_cpu_timer timer;
+
+    if (verbose) {
+        std::cout << "=============================================="        << "\n" 
+                  << "===== Applying Gaussian smooth to volume ====="        << "\n"
+                  << "=============================================="        << "\n"
+                  << "Using ANTs software   `SmoothImage`   with:"           << "\n"
+                  << "Number of dimensions  : " << dim                       << "\n"
+                  << "Gaussian STD          : " << sigma                     << "\n"
+                  << "Is in spacing units   : " << is_sigma_in_spacing_units << "\n"
+                  << "Using median filtering: " << use_median_filtering      << "\n"
+                  << "Input volume          : " << input                     << "\n"
+                  << "Output volume         : " << output                    << "\n"
+                  << std::endl;
+    }
+
     std::vector<std::string> SMOOTH_VECTOR;
 
-    SMOOTH_VECTOR.push_back("3");
+    SMOOTH_VECTOR.push_back(std::to_string(dim));
     SMOOTH_VECTOR.push_back(input);
     SMOOTH_VECTOR.push_back(sigma);
     SMOOTH_VECTOR.push_back(output);
