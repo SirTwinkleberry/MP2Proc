@@ -4,7 +4,7 @@
     "use_deprecated_normalization_from_12bits"      : true,
     "use_denoising_on_unit_normed_synthetic_maps"   : false,
     "do_transform_B1_map_to_t1wUNI_space"           : true,
-    "do_smoothing_of_B1_map_in_t1wUNI_space"        : true,
+    "do_smoothing_of_B1_map_in_t1wUNI_space"        : false,
     "do_smoothing_using_median_filtering"           : false,
     "is_smoothingSigma_in_spacing_units"            : false,
     "do_mask_outside_valid_qT1_range"               : true,
