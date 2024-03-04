@@ -38,10 +38,10 @@
         - Synthetic EDGE $\rightarrow$ $[-0.5, \: 0.5]$
         - Synthetic FLAWS $\rightarrow$ $[-0.5, \: 0.5]$
     - else if `use_denoising_on_unit_normed_synthetic_maps: false`:
-        if `use_deprecated_normalization_from_12bits: true`:
+        - if `use_deprecated_normalization_from_12bits: true`:
             - Synthetic EDGE $\rightarrow$ $[0, \: 4096]$
             - Synthetic FLAWS $\rightarrow$ $[0, \: 4096]$
-        else if `use_deprecated_normalization_from_12bits: false`:
+        - else if `use_deprecated_normalization_from_12bits: false`:
             - Synthetic EDGE $\rightarrow$ $[0, \: 4095]$
             - Synthetic FLAWS $\rightarrow$ $[0, \: 4095]$
 
