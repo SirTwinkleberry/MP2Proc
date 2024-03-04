@@ -1,6 +1,5 @@
-# MP2RAGE_Volume_Processor
+# VolProc ~ MP2RAGE Volume Processor
 
-# Quirks
 ## Requirements
 - Properly defined parameters file in `JSON` format (cf. `example.json`)
 
@@ -69,8 +68,8 @@
 - README / Wiki
 
 
-# Misc
-## Compilation dependencies
+## Misc
+### Compilation dependencies
 - C++ $\geq$ 17
 - Boost (https://github.com/boostorg/boost)
 - Eigen3 (https://gitlab.com/libeigen/eigen)
@@ -79,19 +78,15 @@
 - libinterpolate (https://github.com/CD3/libInterpolate)
 - make / g++
 
-## Runtime dependencies
+### Runtime dependencies
 - None (should be statically built)
 
-## Usage
+### Usage
 `$ {ROOTDIR}/bin/main {ROOTDIR}/example.json`
 
 _This is a header-only library so integrating it to existing C++ code should be as trivial as adding an `#include` to the proper header files (assuming the source dependencies are met)._
 
-## Future
-- GUI?
-- @amasliash's synthetic EDGE / synthetic FLAWS parameters optimizer?
-
-## Tested for exact reproduction of previous code
+### Tested for exact reproduction of previous code
 - [x] $qT_1$
 - [x] $qR_1$
 - [x] $B_1$-corrected $T_1$-w UNI
@@ -101,3 +96,7 @@ _This is a header-only library so integrating it to existing C++ code should be 
 - [x] Synthetic EDGE denoised
 - [x] Synthetic FLAWS
 - [x] Synthetic FLAWS denoised
+
+### Future
+- GUI?
+- @amasliash's synthetic EDGE / synthetic FLAWS parameters optimizer?
