@@ -163,42 +163,42 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"vref_b1_vUnit", FLOAT}
         , {"vref_t1wUNI_vUnit", FLOAT}
         , {"target_b1_faUnit", FLOAT}
-        , {"noiseShift", FLOAT}
+        , {"noise_shift", FLOAT}
         // MP2RAGE UNI parameters
-        , {"t_echoSpacing_msUnit", FLOAT}
-        , {"t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"t_echo_spacing_msUnit", FLOAT}
+        , {"t_repeat_MP2RAGE_msUnit", FLOAT}
         , {"t_inversion1_msUnit", FLOAT}
         , {"t_inversion2_msUnit", FLOAT}
         , {"fa_1_degUnit", FLOAT}
         , {"fa_2_degUnit", FLOAT}
-        , {"inversionEfficiency", FLOAT}
+        , {"inversion_efficiency", FLOAT}
         , {"M0", FLOAT}
         // MP2RAGE Synthetic EDGE parameters
-        , {"edge_t_echoSpacing_msUnit", FLOAT}
-        , {"edge_t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"edge_t_echo_spacing_msUnit", FLOAT}
+        , {"edge_t_repeat_MP2RAGE_msUnit", FLOAT}
         , {"edge_t_inversion1_msUnit", FLOAT}
         , {"edge_t_inversion2_msUnit", FLOAT}
         , {"edge_fa_1_degUnit", FLOAT}
         , {"edge_fa_2_degUnit", FLOAT}
-        , {"edge_inversionEfficiency", FLOAT}
+        , {"edge_inversion_efficiency", FLOAT}
         , {"edge_M0", FLOAT}
         // MP2RAGE Synthetic FLAWS 1 parameters
-        , {"flaws1_t_echoSpacing_msUnit", FLOAT}
-        , {"flaws1_t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"flaws1_t_echo_spacing_msUnit", FLOAT}
+        , {"flaws1_t_repeat_MP2RAGE_msUnit", FLOAT}
         , {"flaws1_t_inversion1_msUnit", FLOAT}
         , {"flaws1_t_inversion2_msUnit", FLOAT}
         , {"flaws1_fa_1_degUnit", FLOAT}
         , {"flaws1_fa_2_degUnit", FLOAT}
-        , {"flaws1_inversionEfficiency", FLOAT}
+        , {"flaws1_inversion_efficiency", FLOAT}
         , {"flaws1_M0", FLOAT}
         // MP2RAGE Synthetic FLAWS 2 parameters
-        , {"flaws2_t_echoSpacing_msUnit", FLOAT}
-        , {"flaws2_t_repeatMP2RAGE_msUnit", FLOAT}
+        , {"flaws2_t_echo_spacing_msUnit", FLOAT}
+        , {"flaws2_t_repeat_MP2RAGE_msUnit", FLOAT}
         , {"flaws2_t_inversion1_msUnit", FLOAT}
         , {"flaws2_t_inversion2_msUnit", FLOAT}
         , {"flaws2_fa_1_degUnit", FLOAT}
         , {"flaws2_fa_2_degUnit", FLOAT}
-        , {"flaws2_inversionEfficiency", FLOAT}
+        , {"flaws2_inversion_efficiency", FLOAT}
         , {"flaws2_M0", FLOAT}
 
         /* INT PARAMETERS */
@@ -530,13 +530,13 @@ int main(int argc, char const *argv[])
             , QT1VectorRange_in_unit
             , config["t_inversion1_msUnit"].template get<double>()
             , config["t_inversion2_msUnit"].template get<double>()
-            , config["t_repeatMP2RAGE_msUnit"].template get<double>()
-            , config["t_echoSpacing_msUnit"].template get<double>()
+            , config["t_repeat_MP2RAGE_msUnit"].template get<double>()
+            , config["t_echo_spacing_msUnit"].template get<double>()
             , config["n_before"].template get<int>()
             , config["n_after"].template get<int>()
             , config["fa_1_degUnit"].template get<double>()
             , config["fa_2_degUnit"].template get<double>()
-            , config["inversionEfficiency"].template get<double>()
+            , config["inversion_efficiency"].template get<double>()
             , config["M0"].template get<double>()
             , &bijectivity_range
             , VERBOSE
@@ -611,13 +611,13 @@ int main(int argc, char const *argv[])
                 data_QT1_in_unit
                 , config["t_inversion1_msUnit"].template get<double>()
                 , config["t_inversion2_msUnit"].template get<double>()
-                , config["t_repeatMP2RAGE_msUnit"].template get<double>()
-                , config["t_echoSpacing_msUnit"].template get<double>()
+                , config["t_repeat_MP2RAGE_msUnit"].template get<double>()
+                , config["t_echo_spacing_msUnit"].template get<double>()
                 , config["n_before"].template get<int>()
                 , config["n_after"].template get<int>()
                 , config["fa_1_degUnit"].template get<double>()
                 , config["fa_2_degUnit"].template get<double>()
-                , config["inversionEfficiency"].template get<double>()
+                , config["inversion_efficiency"].template get<double>()
                 , config["M0"].template get<double>()
                 , N_THREADS
                 , VERBOSE
@@ -656,7 +656,7 @@ int main(int argc, char const *argv[])
                     data_T1W_UNI_CORRECTED_centered.matrix().reshaped()
                     , eigen_T1W_INV1_0_to_4095
                     , eigen_T1W_INV2_0_to_4095
-                    , config["noiseShift"].template get<double>()
+                    , config["noise_shift"].template get<double>()
                     , VERBOSE);
 
                 if ( USE_DEPRECATED )
@@ -688,7 +688,7 @@ int main(int argc, char const *argv[])
                 eigen_T1W_UNI_centered.matrix().reshaped()
                 , eigen_T1W_INV1_0_to_4095
                 , eigen_T1W_INV2_0_to_4095
-                , config["noiseShift"].template get<double>()
+                , config["noise_shift"].template get<double>()
                 , VERBOSE);
             
             if ( USE_DEPRECATED )
@@ -718,13 +718,13 @@ int main(int argc, char const *argv[])
                 data_QT1_in_unit.matrix().reshaped()
                 , config["edge_t_inversion1_msUnit"].template get<double>()
                 , config["edge_t_inversion2_msUnit"].template get<double>()
-                , config["edge_t_repeatMP2RAGE_msUnit"].template get<double>()
-                , config["edge_t_echoSpacing_msUnit"].template get<double>()
+                , config["edge_t_repeat_MP2RAGE_msUnit"].template get<double>()
+                , config["edge_t_echo_spacing_msUnit"].template get<double>()
                 , config["edge_n_before"].template get<int>()
                 , config["edge_n_after"].template get<int>()
                 , config["edge_fa_1_degUnit"].template get<double>()
                 , config["edge_fa_2_degUnit"].template get<double>()
-                , config["edge_inversionEfficiency"].template get<double>()
+                , config["edge_inversion_efficiency"].template get<double>()
                 , config["edge_M0"].template get<double>()
                 , N_THREADS
                 , VERBOSE);
@@ -757,7 +757,7 @@ int main(int argc, char const *argv[])
                         SYN_EDGE.matrix().reshaped()
                         , eigen_T1W_INV1_0_to_4095
                         , eigen_T1W_INV2_0_to_4095
-                        , config["noiseShift"].template get<double>()
+                        , config["noise_shift"].template get<double>()
                         , VERBOSE);
 
                     if ( USE_DEPRECATED )
@@ -770,7 +770,7 @@ int main(int argc, char const *argv[])
                         SYN_EDGE_0_TO_4095.matrix().reshaped()
                         , eigen_T1W_INV1_0_to_4095
                         , eigen_T1W_INV2_0_to_4095
-                        , config["noiseShift"].template get<double>()
+                        , config["noise_shift"].template get<double>()
                         , VERBOSE);
 
                 export_vector.push_back(
@@ -799,23 +799,23 @@ int main(int argc, char const *argv[])
                 data_QT1_in_unit.matrix().reshaped()
                 , config["flaws1_t_inversion1_msUnit"].template get<double>()
                 , config["flaws1_t_inversion2_msUnit"].template get<double>()
-                , config["flaws1_t_repeatMP2RAGE_msUnit"].template get<double>()
-                , config["flaws1_t_echoSpacing_msUnit"].template get<double>()
+                , config["flaws1_t_repeat_MP2RAGE_msUnit"].template get<double>()
+                , config["flaws1_t_echo_spacing_msUnit"].template get<double>()
                 , config["flaws1_n_before"].template get<int>()
                 , config["flaws1_n_after"].template get<int>()
                 , config["flaws1_fa_1_degUnit"].template get<double>()
                 , config["flaws1_fa_2_degUnit"].template get<double>()
-                , config["flaws1_inversionEfficiency"].template get<double>()
+                , config["flaws1_inversion_efficiency"].template get<double>()
                 , config["flaws1_M0"].template get<double>()
                 , config["flaws2_t_inversion1_msUnit"].template get<double>()
                 , config["flaws2_t_inversion2_msUnit"].template get<double>()
-                , config["flaws2_t_repeatMP2RAGE_msUnit"].template get<double>()
-                , config["flaws2_t_echoSpacing_msUnit"].template get<double>()
+                , config["flaws2_t_repeat_MP2RAGE_msUnit"].template get<double>()
+                , config["flaws2_t_echo_spacing_msUnit"].template get<double>()
                 , config["flaws2_n_before"].template get<int>()
                 , config["flaws2_n_after"].template get<int>()
                 , config["flaws2_fa_1_degUnit"].template get<double>()
                 , config["flaws2_fa_2_degUnit"].template get<double>()
-                , config["flaws2_inversionEfficiency"].template get<double>()
+                , config["flaws2_inversion_efficiency"].template get<double>()
                 , config["flaws2_M0"].template get<double>()
                 , N_THREADS
                 , VERBOSE);
@@ -857,7 +857,7 @@ int main(int argc, char const *argv[])
                         SYN_FLAWS_centered_masked.matrix().reshaped()
                         , eigen_T1W_INV1_0_to_4095
                         , eigen_T1W_INV2_0_to_4095
-                        , config["noiseShift"].template get<double>()
+                        , config["noise_shift"].template get<double>()
                         , VERBOSE);
 
                     if ( USE_DEPRECATED )
@@ -870,7 +870,7 @@ int main(int argc, char const *argv[])
                         SYN_FLAWS_0_TO_4095_masked.matrix().reshaped()
                         , eigen_T1W_INV1_0_to_4095
                         , eigen_T1W_INV2_0_to_4095
-                        , config["noiseShift"].template get<double>()
+                        , config["noise_shift"].template get<double>()
                         , VERBOSE);
 
                 export_vector.push_back(
