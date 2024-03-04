@@ -9,7 +9,6 @@
  * 
  */
 
-
 #pragma once
 
 #include <cmath>
@@ -238,6 +237,26 @@ static T3 MP2RAGE_FORLOOP(const T1 &B1REL, const T2 &QT1, double tInversion1, do
     return out;
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam T1 
+ * @tparam T2 
+ * @param QT1 
+ * @param tInversion1 
+ * @param tInversion2 
+ * @param TRmp2rage 
+ * @param tEchoSpacing 
+ * @param nBefore 
+ * @param nAfter 
+ * @param FA1_deg 
+ * @param FA2_deg 
+ * @param inversionEfficiency 
+ * @param M0 
+ * @param nThreads 
+ * @param verbose 
+ * @return T2 
+ */
 template <typename T1, typename T2>
 static T2 MP2RAGE_B1REL_UNITY(const T1 &QT1, double tInversion1, double tInversion2, double TRmp2rage, double tEchoSpacing, int nBefore, int nAfter, double FA1_deg, double FA2_deg, double inversionEfficiency, double M0, int nThreads = 1, bool verbose = true)
 {

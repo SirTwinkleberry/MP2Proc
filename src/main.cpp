@@ -9,8 +9,7 @@
  * 
  * @todo toggle deprecated normalization in json boolean (default: false)
  * @todo toggle unified denoising function in json boolean (default: true)
- * @todo fix zlib linking error using when ANTs and RNifti libraries concurrently
- * @todo docstrings
+ * @todo fill docstrings
  * @todo print_usage() function
  * 
  */
@@ -44,11 +43,21 @@ using access = _access;
 #include "src/preprocessing.hpp"
 
 
+/**
+ * @brief 
+ * 
+ */
 void print_usage()
 {
 
 }
 
+/**
+ * @brief 
+ * 
+ * @param argc 
+ * @param argv 
+ */
 void print_command(int argc, char const *argv[])
 {
     std::string argument;
@@ -56,6 +65,14 @@ void print_command(int argc, char const *argv[])
     std::cout << "COMMAND >> " + argument << std::endl;
 }
 
+/**
+ * @brief 
+ * 
+ * @param path 
+ * @param status 
+ * @return true 
+ * @return false 
+ */
 bool file_exists(const std::string &path, std::filesystem::file_status status = std::filesystem::file_status{})
 {
     if (std::filesystem::status_known(status) ? std::filesystem::exists(status) : std::filesystem::exists(std::filesystem::path(path)))
@@ -63,6 +80,13 @@ bool file_exists(const std::string &path, std::filesystem::file_status status = 
     return false;
 }
 
+/**
+ * @brief 
+ * 
+ * @param path 
+ * @return true 
+ * @return false 
+ */
 bool parent_is_writable(const std::string &path)
 {
     if (access(std::filesystem::path(path).parent_path().c_str(), W_OK) == 0)
@@ -70,6 +94,12 @@ bool parent_is_writable(const std::string &path)
     return false;
 }
 
+/**
+ * @brief 
+ * 
+ * @param config 
+ * @param verbose 
+ */
 void check_type_validity_of_parameters(const nlohmann::json &config, bool verbose = true)
 {
     std::string expected_type = "";
@@ -253,7 +283,13 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
     std::cout << std::endl;
 }
 
-
+/**
+ * @brief 
+ * 
+ * @param argc 
+ * @param argv 
+ * @return int 
+ */
 int main(int argc, char const *argv[])
 {
     nlohmann::json config;

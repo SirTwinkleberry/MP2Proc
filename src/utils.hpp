@@ -9,7 +9,6 @@
  * 
  */
 
-
 #pragma once
 
 #include <vector>
@@ -23,6 +22,20 @@
 #include "src/mp2rage.hpp"
 
 
+/**
+ * @brief 
+ * 
+ * @tparam D 
+ * @tparam XT 
+ * @tparam YT 
+ * @tparam ZT 
+ * @param interpolator 
+ * @param B1Map_relative 
+ * @param T1W_UNIMap_centered 
+ * @param nThreads 
+ * @param verbose 
+ * @return ZT 
+ */
 template <typename D, typename XT, typename YT, typename ZT>
 static ZT COMPUTE_QT1MAP_IN_UNIT(const _2D::LinearDelaunayTriangleInterpolator<D> &interpolator, const XT &B1Map_relative, const YT &T1W_UNIMap_centered, int nThreads = 1, bool verbose = true)
 {
@@ -47,6 +60,15 @@ static ZT COMPUTE_QT1MAP_IN_UNIT(const _2D::LinearDelaunayTriangleInterpolator<D
     return (ZT) QT1Map_in_unit;
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @param QT1Map_in_unit 
+ * @param verbose 
+ * @return YT 
+ */
 template <typename XT, typename YT>
 static YT COMPUTE_QR1MAP_IN_PER_UNIT(const XT &QT1Map_in_unit, bool verbose = true)
 {
@@ -63,6 +85,28 @@ static YT COMPUTE_QR1MAP_IN_PER_UNIT(const XT &QT1Map_in_unit, bool verbose = tr
     return (YT) (1. / QT1Map_in_unit.array());
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam D 
+ * @tparam XT 
+ * @tparam YT 
+ * @param B1VectorRange_relative 
+ * @param QT1VectorRange_in_unit 
+ * @param tInversion1_in_unit 
+ * @param tInversion2_in_unit 
+ * @param TRmp2rage_in_unit 
+ * @param tEchoSpacing_in_unit 
+ * @param nBefore 
+ * @param nAfter 
+ * @param FA1_in_degrees 
+ * @param FA2_in_degrees 
+ * @param inversionEfficiency 
+ * @param M0 
+ * @param bijectivity_range 
+ * @param verbose 
+ * @return _2D::LinearDelaunayTriangleInterpolator<D> 
+ */
 template <typename D, typename XT, typename YT>
 static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::pair<double, double> *bijectivity_range, bool verbose = true)
 {
@@ -90,6 +134,26 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(cons
         , verbose);
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @param QT1Map_in_unit 
+ * @param tInversion1_in_unit 
+ * @param tInversion2_in_unit 
+ * @param TRmp2rage_in_unit 
+ * @param tEchoSpacing_in_unit 
+ * @param nBefore 
+ * @param nAfter 
+ * @param FA1_in_degrees 
+ * @param FA2_in_degrees 
+ * @param inversionEfficiency 
+ * @param M0 
+ * @param nThreads 
+ * @param verbose 
+ * @return YT 
+ */
 template <typename XT, typename YT>
 static YT COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED(const XT &QT1Map_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, int nThreads = 1, bool verbose = true)
 {
@@ -120,6 +184,16 @@ static YT COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED(const XT &QT1Map_in_unit,
         , verbose);
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @param ARRAY_TO_MASK 
+ * @param REFERENCE 
+ * @param verbose 
+ * @return XT 
+ */
 template <typename XT, typename YT>
 static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool verbose = true)
 {
@@ -143,6 +217,15 @@ static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool
     return out;
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam T 
+ * @param ARRAY_TO_MASK 
+ * @param RANGE 
+ * @param verbose 
+ * @return T 
+ */
 template <typename T>
 static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, const std::pair<double, double> &RANGE, bool verbose = true)
 {
@@ -168,6 +251,17 @@ static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, const std::pair<double, double>
     return out;
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @tparam ZT 
+ * @param X 
+ * @param Y 
+ * @param verbose 
+ * @return ZT 
+ */
 template <typename XT, typename YT, typename ZT>
 static ZT MINIMUM_INTENSITY_PROJECTION(const XT &X, const YT &Y, bool verbose = true)
 {
@@ -186,6 +280,26 @@ static ZT MINIMUM_INTENSITY_PROJECTION(const XT &X, const YT &Y, bool verbose = 
     return (ZT) X.array().min(Y.array());
 }
 
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @param QT1Map_in_ms 
+ * @param tInversion1_in_ms 
+ * @param tInversion2_in_ms 
+ * @param TRmp2rage_in_ms 
+ * @param tEchoSpacing_in_ms 
+ * @param nBefore 
+ * @param nAfter 
+ * @param FA1_in_degrees 
+ * @param FA2_in_degrees 
+ * @param inversionEfficiency 
+ * @param M0 
+ * @param nThreads 
+ * @param verbose 
+ * @return YT 
+ */
 template <typename XT, typename YT>
 static YT EDGE_CENTERED(const XT &QT1Map_in_ms, double tInversion1_in_ms = 820., double tInversion2_in_ms = 1320., double TRmp2rage_in_ms = 8000., double tEchoSpacing_in_ms = 2.5, int nBefore = 64, int nAfter = 128, double FA1_in_degrees = 5., double FA2_in_degrees = 5., double inversionEfficiency = 1., double M0 = 1., int nThreads = 1, bool verbose = true)
 {
@@ -217,7 +331,36 @@ static YT EDGE_CENTERED(const XT &QT1Map_in_ms, double tInversion1_in_ms = 820.,
         , verbose);
 }
 
-
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @param QT1Map_in_ms 
+ * @param FLAWS1_tInversion1_in_ms 
+ * @param FLAWS1_tInversion2_in_ms 
+ * @param FLAWS1_TRmp2rage_in_ms 
+ * @param FLAWS1_tEchoSpacing_in_ms 
+ * @param FLAWS1_nBefore 
+ * @param FLAWS1_nAfter 
+ * @param FLAWS1_FA1_in_degrees 
+ * @param FLAWS1_FA2_in_degrees 
+ * @param FLAWS1_inversionEfficiency 
+ * @param FLAWS1_M0 
+ * @param FLAWS2_tInversion1_in_ms 
+ * @param FLAWS2_tInversion2_in_ms 
+ * @param FLAWS2_TRmp2rage_in_ms 
+ * @param FLAWS2_tEchoSpacing_in_ms 
+ * @param FLAWS2_nBefore 
+ * @param FLAWS2_nAfter 
+ * @param FLAWS2_FA1_in_degrees 
+ * @param FLAWS2_FA2_in_degrees 
+ * @param FLAWS2_inversionEfficiency 
+ * @param FLAWS2_M0 
+ * @param nThreads 
+ * @param verbose 
+ * @return YT 
+ */
 template <typename XT, typename YT>
 static YT FLAWS_CENTERED(const XT &QT1Map_in_ms, double FLAWS1_tInversion1_in_ms = 900., double FLAWS1_tInversion2_in_ms = 3700., double FLAWS1_TRmp2rage_in_ms = 8250., double FLAWS1_tEchoSpacing_in_ms = 7.5, int FLAWS1_nBefore = 64, int FLAWS1_nAfter = 128, double FLAWS1_FA1_in_degrees = 9., double FLAWS1_FA2_in_degrees = 5., double FLAWS1_inversionEfficiency = 1., double FLAWS1_M0 = 1., double FLAWS2_tInversion1_in_ms = 200., double FLAWS2_tInversion2_in_ms = 1200., double FLAWS2_TRmp2rage_in_ms = 5000., double FLAWS2_tEchoSpacing_in_ms = 3.1, int FLAWS2_nBefore = 64, int FLAWS2_nAfter = 128, double FLAWS2_FA1_in_degrees = 5., double FLAWS2_FA2_in_degrees = 5., double FLAWS2_inversionEfficiency = 1., double FLAWS2_M0 = 1., int nThreads = 1, bool verbose = true)
 {
@@ -266,7 +409,6 @@ static YT FLAWS_CENTERED(const XT &QT1Map_in_ms, double FLAWS1_tInversion1_in_ms
     return MINIMUM_INTENSITY_PROJECTION<YT, YT, YT>(flaws1, flaws2, verbose);
 }
 
-
 /**
  * @brief 
  * 
@@ -308,7 +450,17 @@ static bool DATA_TO_FILE(const std::string &path, const T &data, const RNifti::N
     }
 }
 
-
+/**
+ * @brief 
+ * 
+ * @tparam T 
+ * @param data_vector 
+ * @param reference 
+ * @param datatype 
+ * @param do_round 
+ * @param n_threads 
+ * @param verbose 
+ */
 template <typename T>
 static void EXPORT_RESULTS(const std::vector<std::pair<std::string, T*>> &data_vector, const RNifti::NiftiImage &reference, int datatype = 512, bool do_round = true, int n_threads = 1, bool verbose = true)
 {
@@ -338,11 +490,6 @@ static void EXPORT_RESULTS(const std::vector<std::pair<std::string, T*>> &data_v
 }
 
 
-// static void SMOOTH() {}
-
-// static void RESAMPLE_AND_ROTATE() {}
-
-
 /*
     OVERLOADS
 */
@@ -355,7 +502,6 @@ static void EXPORT_RESULTS(const std::vector<std::pair<std::string, Eigen::Array
     EXPORT_RESULTS<Eigen::ArrayXd>(data_vector, reference, datatype, do_round, n_threads, verbose);
 }
 
-
 /**
  * @brief Overload of `DATA_TO_FILE<D, T>(...)`
  */
@@ -363,7 +509,6 @@ static bool DATA_TO_FILE(const std::string &path, const Eigen::ArrayXd &data, co
 {
     return DATA_TO_FILE<double, Eigen::ArrayXd>(path, data, reference, datatype, do_round, verbose);
 }
-
 
 /**
  * @brief Overload of `COMPUTE_QT1MAP_IN_UNIT<D, XT, YT, ZT>(...)`

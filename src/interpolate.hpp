@@ -7,14 +7,10 @@
  * 
  * @copyright GPLv3 (c) 2024
  * 
+ * @todo check if every STD lib include is necessary
  */
 
-
 #pragma once
-
-/**
- * ARE THE STD LIBRARY INCLUDES ALL NECESSARY?
-*/
 
 #include <vector>
 #include <algorithm>

@@ -9,6 +9,7 @@
  * 
  */
 
+#pragma once
 
 #include <vector>       // Necessary for ANTs somehow
 #include <string>       // Necessary for ANTs somehow
@@ -82,7 +83,6 @@ static int ANTS_APPLY_TRANSFORMS(const std::string &input, const std::string &re
 
     return ants::antsApplyTransforms(TRANSFORMS_VECTOR, &std::cout);
 }
-
 
 /**
  * @brief 
