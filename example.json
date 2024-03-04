@@ -3,9 +3,9 @@
 
     "use_deprecated_normalization_from_12bits"      : false,
     "use_alternative_denoising_on_synthetic_maps"   : false,
-    "do_transform_B1_map_to_t1wUNI_space"           : true,
-    "do_smoothing_of_B1_map_in_t1wUNI_space"        : false,
-    "do_smoothing_using_median_filtering"           : false,
+    "do_ants_transform_B1_map_to_t1wUNI_space"      : true,
+    "do_ants_smoothing_of_B1_map_in_t1wUNI_space"   : false,
+    "do_ants_smoothing_using_median_filtering"      : false,
     "is_ants_smoothing_sigma_in_spacing_units"      : false,
     "do_mask_outside_valid_qT1_interpolation_range" : true,
     "do_bound_B1_to_valid_interpolation_range"      : false,
@@ -26,8 +26,6 @@
     "path_INPUT_inversion_2_msUnit"                 : "/path/to/nifti/files/01_0024_t1-mp2r-sag-0p6-p3-cemerem-inv2_c32.nii.gz",
     "path_INPUT_t1wUNI_dicomUnit"                   : "/path/to/nifti/files/01_0025_t1-mp2r-sag-0p6-p3-cemerem-uni-images_c32.nii.gz",
 
-    "path_OUTPUT_b1_resliced_faUnit"                : "/path/to/desired/location/out_b1_resliced_faUnit.nii.gz",
-    "path_OUTPUT_b1_resliced_smoothed_faUnit"       : "/path/to/desired/location/out_b1_resliced_smoothed_faUnit.nii.gz",
     "path_OUTPUT_b1_processed_prct"                 : "/path/to/desired/location/out_b1_processed_prct.nii.gz",
     "path_OUTPUT_t1wUNI_DEN_dicomUnit"              : "/path/to/desired/location/out_t1wUNI_DEN_dicomUnit.nii.gz",
     "path_OUTPUT_t1wUNI_B1Corrected_dicomUnit"      : "/path/to/desired/location/out_t1wUNI_B1Corrected_dicomUnit.nii.gz",

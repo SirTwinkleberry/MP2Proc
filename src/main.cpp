@@ -119,9 +119,9 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
 
         , {"use_deprecated_normalization_from_12bits", BOOL}
         , {"use_alternative_denoising_on_synthetic_maps", BOOL}
-        , {"do_transform_B1_map_to_t1wUNI_space", BOOL}
-        , {"do_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
-        , {"do_smoothing_using_median_filtering", BOOL}
+        , {"do_ants_transform_B1_map_to_t1wUNI_space", BOOL}
+        , {"do_ants_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
+        , {"do_ants_smoothing_using_median_filtering", BOOL}
         , {"is_ants_smoothing_sigma_in_spacing_units", BOOL}
         , {"do_mask_outside_valid_qT1_interpolation_range", BOOL}
         , {"do_bound_B1_to_valid_interpolation_range", BOOL}
@@ -143,8 +143,6 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"path_INPUT_inversion_2_msUnit", INPUT}
         , {"path_INPUT_t1wUNI_dicomUnit", INPUT}
 
-        , {"path_OUTPUT_b1_resliced_faUnit", OUTPUT}
-        , {"path_OUTPUT_b1_resliced_smoothed_faUnit", OUTPUT}
         , {"path_OUTPUT_b1_processed_prct", OUTPUT}
         , {"path_OUTPUT_t1wUNI_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_t1wUNI_B1Corrected_dicomUnit", OUTPUT}
@@ -324,7 +322,6 @@ int main(int argc, char const *argv[])
         bool DO_ROUND = config["do_round_on_export"].template get<bool>();
         int DATATYPE = config["datatype"].template get<int>();
         int N_THREADS = config["n_threads"].template get<int>();
-        std::string PATH_B1_MAP = config["path_INPUT_b1_faUnit"].template get<std::string>();
         const std::vector<double> RANGE_B1 = config["array_b1_relativeUnit"].template get<std::vector<double>>();
         const std::vector<double> RANGE_T1 = config["array_qT1_msUnit"].template get<std::vector<double>>();
 
@@ -355,12 +352,12 @@ int main(int argc, char const *argv[])
             TRANSFORMING IT TO T1W UNI SPACE
             APPLYING A GAUSSIAN SMOOTH TO IT
          */
-        if ( config["do_transform_B1_map_to_t1wUNI_space"].template get<bool>() )
+        if ( config["do_ants_transform_B1_map_to_t1wUNI_space"].template get<bool>() )
         {
-            if ( ANTS_APPLY_TRANSFORMS(
-                    PATH_B1_MAP
+            if ( EXIT_FAILURE == ANTS_APPLY_TRANSFORMS(
+                    config["path_INPUT_b1_faUnit"].template get<std::string>()
                     , config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
-                    , config["path_OUTPUT_b1_resliced_faUnit"].template get<std::string>()
+                    , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
                     , "default"
                     , "identity"
                     , config["ants_interpolation_method_for_resampling"].template get<std::string>()
@@ -368,25 +365,22 @@ int main(int argc, char const *argv[])
                     , 3
                     , 0
                     , VERBOSE)
-                == EXIT_SUCCESS )
-                PATH_B1_MAP = config["path_OUTPUT_b1_resliced_faUnit"].template get<std::string>();
-            else std::cout << "\033[1;31mFailed to apply transforms. Attempting to continue without.\033[0m" << std::endl;
-
+                )
+                std::cout << "\033[1;31mFailed to apply transforms. Attempting to continue without.\033[0m" << std::endl;
         }
 
-        if ( config["do_smoothing_of_B1_map_in_t1wUNI_space"].template get<bool>() )
+        if ( config["do_ants_smoothing_of_B1_map_in_t1wUNI_space"].template get<bool>() )
         {
-            if ( ANTS_SMOOTH_IMAGE(
-                    PATH_B1_MAP
-                    , config["path_OUTPUT_b1_resliced_smoothed_faUnit"].template get<std::string>()
+            if ( EXIT_FAILURE == ANTS_SMOOTH_IMAGE(
+                    config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                    , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
                     , 3
                     , config["ants_smoothing_sigma"].template get<std::string>()
                     , config["is_ants_smoothing_sigma_in_spacing_units"].template get<bool>()
-                    , config["do_smoothing_using_median_filtering"].template get<bool>()
+                    , config["do_ants_smoothing_using_median_filtering"].template get<bool>()
                     , VERBOSE)
-                == EXIT_SUCCESS )
-                PATH_B1_MAP = config["path_OUTPUT_b1_resliced_smoothed_faUnit"].template get<std::string>();
-            else std::cout << "\033[1;31mFailed to apply Gaussian smoothing. Continuing without.\033[0m" << std::endl;
+                )
+                std::cout << "\033[1;31mFailed to apply Gaussian smoothing. Continuing without.\033[0m" << std::endl;
         }
 
 
@@ -435,7 +429,7 @@ int main(int argc, char const *argv[])
             #pragma omp task
             {
                 const RNifti::NiftiImage volume_B1_in_UNI_SPACE_0_to_4095 = RNifti::NiftiImage(
-                    PATH_B1_MAP
+                    config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
                     , true
                 );
                 eigen_B1_in_UNI_SPACE_relative = B1_TO_RELATIVE_B1<Eigen::ArrayXd, Eigen::ArrayXd>(
@@ -449,7 +443,7 @@ int main(int argc, char const *argv[])
                     , VERBOSE
                 );
 
-                if ( config["do_bound_b1_to_valid_interpolation_range"].template get<bool>() )
+                if ( config["do_bound_B1_to_valid_interpolation_range"].template get<bool>() )
                     eigen_B1_in_UNI_SPACE_relative = MASK_FROM_RANGE<Eigen::ArrayXd>(
                         eigen_B1_in_UNI_SPACE_relative
                         , RANGE_B1.at(1)
