@@ -82,7 +82,7 @@ if [ "$2" = "debug" ]; then
     CPPFLAGS="-fopenmp -O -g3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wconversion -Wno-sign-conversion -Wdouble-promotion ${@:3}"
 else
     echo ">> RELEASE MODE COMPILATION <<"
-    CPPFLAGS="-fopenmp -O3 ${@:2}"
+    CPPFLAGS="-fopenmp -O3 -DNDEBUG -Wno-deprecated-declarations ${@:2}"
 fi
 LIBS="-L./externals/lib -lboost_timer ${ANTSLIBS[@]} ${ITKLIBS[@]}"
 INCLUDE="-I./externals/include"
@@ -103,5 +103,3 @@ g++ ${CXXFLAGS} ${CPPFLAGS} \
     ${LIBS} \
     -o ${BIN}/${PROGRAM} \
     && ${BIN}/${PROGRAM} $1
-
-# -Wno-deprecated-declarations to remove deprecation warnings

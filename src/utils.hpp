@@ -12,6 +12,7 @@
 #pragma once
 
 #include <vector>
+#include <sstream>
 #include <boost/timer/timer.hpp>
 #include <omp.h>
 
@@ -426,11 +427,16 @@ static YT FLAWS_CENTERED(const XT &QT1Map_in_ms, double FLAWS1_tInversion1_in_ms
 template <typename D, typename T>
 static bool DATA_TO_FILE(const std::string &path, const T &data, const RNifti::NiftiImage &reference, int datatype, bool do_round = false, bool verbose = true)
 {
+    std::stringstream stream;
+
     try 
     {
         if ( verbose )
-            std::cout << "EXPORTING to " << path << std::endl;
-        
+        {
+            stream << "EXPORTING to " << path << std::endl;
+            std::cout << stream.str();
+        }
+
         std::vector<D> vec = std::vector<D>(data.data(), data.data() + data.size()); 
         
         if ( do_round )
@@ -445,7 +451,11 @@ static bool DATA_TO_FILE(const std::string &path, const T &data, const RNifti::N
     catch (const std::exception &e)
     {
         if ( verbose )
-            std::cout << "Failed to save to: " << path << "\n" << e.what() << std::endl;
+        {
+            stream << "Failed to save to: " << path << "\n" << e.what() << std::endl;
+            std::cout << stream.str();
+        }
+
         return false;
     }
 }
