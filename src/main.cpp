@@ -7,8 +7,6 @@
  * 
  * @copyright GPLv3 (c) 2024
  * 
- * @todo toggle deprecated normalization in json boolean (default: false)
- * @todo toggle unified denoising function in json boolean (default: true)
  * @todo fill docstrings
  * @todo print_usage() function
  * 
