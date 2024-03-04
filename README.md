@@ -1,4 +1,4 @@
-# MP2RAGE_Volume_Processor
+# VolProc ~ MP2RAGE Volume Processor
 
 # Quirks
 ## Requirements
