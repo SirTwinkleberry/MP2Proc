@@ -66,7 +66,7 @@
 - Test suite (support for windows / linux) (#3)
 - Documentation (#4)
 - Copyright and Credits header in files (#5)
-- README / Wiki (#6)
+- README / Wiki (#4, #6)
 
 
 ## Misc
