@@ -7,6 +7,8 @@
  * 
  * @copyright GPLv3 (c) 2024
  * 
+ * @todo qR1 returns a FLAWS...
+ *  is it that it's not making a copy of qT1 and FLAWS neither?
  * @todo fill docstrings
  * @todo print_usage() function
  * 
