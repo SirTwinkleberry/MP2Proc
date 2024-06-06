@@ -74,7 +74,6 @@ _This is a header-only library so integrating it to existing C++ code should be 
 - Multithreading
 
 ## Still needs
-- Boolean to control whether to cap the $B_1$ map to its provided interpolation range as to output more publication-friendly figures (#7)
 - Fix `boost`'s timer library static linking (#1)
 - Proper `CMakeLists.txt` / `Makefile` with support for tests / release / debug / example (#2)
 - Test suite (support for windows / linux) (#3)
