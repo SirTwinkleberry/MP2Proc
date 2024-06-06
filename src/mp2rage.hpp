@@ -51,7 +51,7 @@ static T3 MP2RAGE(const T1 &B1REL, const T2 &QT1, double tInversion1, double tIn
 
         std::cout << "Computing theoretical T1-weighted MP2RAGE UNI signal" << "\n"
                   << "Matrix version (currently not suitable for dimensions)" << "\n"
-                  << "B1REL range: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (∅)" << "\n"
+                  << "B1REL range: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (dimensionless)" << "\n"
                   << "  QT1 range: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
                   << "Delay to inversion #1: " << tInversion1 << " (in provided time unit)" << "\n"
                   << "Delay to inversion #2: " << tInversion2 << " (in provided time unit)" << "\n"
@@ -160,7 +160,7 @@ static T3 MP2RAGE_FORLOOP(const T1 &B1REL, const T2 &QT1, double tInversion1, do
 
         std::cout << "Computing theoretical T1-weighted MP2RAGE UNI signal" << "\n"
                   << "For-loop version" << "\n"
-                  << "B1REL range: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (∅)" << "\n"
+                  << "B1REL range: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (dimensionless)" << "\n"
                   << "  QT1 range: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
                   << "Delay to inversion #1: " << tInversion1 << " (in provided time unit)" << "\n"
                   << "Delay to inversion #2: " << tInversion2 << " (in provided time unit)" << "\n"
@@ -270,7 +270,7 @@ static T2 MP2RAGE_B1REL_UNITY(const T1 &QT1, double tInversion1, double tInversi
 
         std::cout << "Computing theoretical T1-weighted MP2RAGE UNI signal" << "\n"
                   << "B1REL unity version" << "\n"
-                  << "B1REL range: [1.0, 1.0], step: 0 (∅)" << "\n"
+                  << "B1REL range: [1.0, 1.0], step: 0 (dimensionless)" << "\n"
                   << "  QT1 range: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
                   << "Delay to inversion #1: " << tInversion1 << " (in provided time unit)" << "\n"
                   << "Delay to inversion #2: " << tInversion2 << " (in provided time unit)" << "\n"

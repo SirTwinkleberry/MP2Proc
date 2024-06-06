@@ -2,13 +2,11 @@
  * @file main.cpp
  * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
- * @version 1.2
- * @date 2024-03-04
+ * @version 1.3
+ * @date 2024-06-06
  * 
  * @copyright GPLv3 (c) 2024
  * 
- * @todo qR1 returns a FLAWS...
- *  is it that it's not making a copy of qT1 and FLAWS neither?
  * @todo fill docstrings
  * @todo print_usage() function
  * 
@@ -108,7 +106,9 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
     enum TypeID {
         BOOL
         , INPUT
+        , INPUT_OPTIONAL
         , OUTPUT
+        , OUTPUT_OPTIONAL
         , STRING
         , FLOAT
         , INT
@@ -125,9 +125,10 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_ants_smoothing_of_B1_map_in_t1wUNI_space", BOOL}
         , {"do_ants_smoothing_using_median_filtering", BOOL}
         , {"is_ants_smoothing_sigma_in_spacing_units", BOOL}
-        , {"do_mask_outside_valid_qT1_interpolation_range", BOOL}
+        , {"do_restore_bijectivity_of_qT1_along_local_B1", BOOL}
         , {"do_bound_B1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
+        , {"export_quantitative_instead_of_qualitative", BOOL}
 
         , {"compute_t1wUNI_DEN", BOOL}
         , {"compute_t1wUNI_B1Corrected", BOOL}
@@ -140,7 +141,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"compute_FLAWS_DEN", BOOL}
 
         /* STRING PARAMETERS */
-        , {"path_INPUT_b1_faUnit", INPUT}
+        , {"path_INPUT_b1_faUnit", INPUT_OPTIONAL}
         , {"path_INPUT_inversion_1_msUnit", INPUT}
         , {"path_INPUT_inversion_2_msUnit", INPUT}
         , {"path_INPUT_t1wUNI_dicomUnit", INPUT}
@@ -155,6 +156,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"path_OUTPUT_EDGE_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_FLAWS_dicomUnit", OUTPUT}
         , {"path_OUTPUT_FLAWS_DEN_dicomUnit", OUTPUT}
+        , {"path_OUTPUT_global_mask", OUTPUT}
 
         , {"ants_interpolation_method_for_resampling", STRING}
         , {"ants_smoothing_sigma", STRING}
@@ -222,7 +224,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"array_qT1_msUnit", RANGE}
     };
 
-    for (const auto &[key, value] : map)
+    for ( const auto &[key, value] : map )
     {
         try
         {
@@ -238,6 +240,10 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
                     expected_type = "string (input filepath)";
                     if ( !config[key].is_string() ) throw std::invalid_argument(key + " has wrong type.");
                     if ( !file_exists(config[key].template get<std::string>()) ) throw std::invalid_argument(key + " file does not exist.");
+                    break;
+                case INPUT_OPTIONAL:
+                    expected_type = "optional string (input filepath)";
+                    if ( !config[key].is_string() ) throw std::invalid_argument(key + " has wrong type.");
                     break;
                 case OUTPUT:
                     expected_type = "string (output filepath)";
@@ -331,24 +337,34 @@ int main(int argc, char const *argv[])
             BRINGING VARIABLES INTO SCOPE
             KEEPING THEM UNTIL END OF EXPORT
          */
+        Eigen::ArrayXd mask_global;
+        Eigen::ArrayXd mask_B1;
+        Eigen::ArrayXd mask_qT1;
         Eigen::ArrayXd eigen_B1_in_UNI_SPACE_relative;
         Eigen::ArrayXd eigen_T1W_INV1_0_to_4095;
         Eigen::ArrayXd eigen_T1W_INV2_0_to_4095;
         Eigen::ArrayXd eigen_T1W_UNI_centered;
-        Eigen::ArrayXd data_QT1_in_unit;
-        Eigen::ArrayXd data_QR1_in_pkunit;
+        Eigen::ArrayXd data_QT1_in_unit_masked;
+        Eigen::ArrayXd data_QR1_in_pkunit_masked;
         Eigen::ArrayXd data_T1W_UNI_0_TO_4095_denoised;
         Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_masked;
         Eigen::ArrayXd data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked;
-        Eigen::ArrayXd SYN_EDGE_0_TO_4095;
+        Eigen::ArrayXd SYN_EDGE_0_TO_4095_masked;
         Eigen::ArrayXd SYN_EDGE_0_TO_4095_denoised;
         Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked;
         Eigen::ArrayXd SYN_FLAWS_0_TO_4095_masked_denoised;
 
         std::vector<std::pair<std::string, Eigen::ArrayXd*>> export_vector;
-        std::pair<double, double> bijectivity_range;
+        std::vector<std::pair<std::string, Eigen::ArrayXd*>> export_mask_vector;
+        std::vector<std::pair<double, double>> bijectivity_range;
 
         
+        /*
+            INITIAL WARNINGS
+         */
+        if ( !config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+            std::cout << "\033[1;32mYou have chosen to export QUALITATIVE maps. Make sure to use the global mask during QUANTITATIVE analyses.\033[0m" << std::endl;
+
         /* 
             PREPROCESSING THE MAP: B1
             TRANSFORMING IT TO T1W UNI SPACE
@@ -356,33 +372,57 @@ int main(int argc, char const *argv[])
          */
         if ( config["do_ants_transform_B1_map_to_t1wUNI_space"].template get<bool>() )
         {
-            if ( EXIT_FAILURE == ANTS_APPLY_TRANSFORMS(
-                    config["path_INPUT_b1_faUnit"].template get<std::string>()
-                    , config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
-                    , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
-                    , "default"
-                    , "identity"
-                    , config["ants_interpolation_method_for_resampling"].template get<std::string>()
-                    , 0.0
-                    , 3
-                    , 0
-                    , VERBOSE)
-                )
-                std::cout << "\033[1;31mFailed to apply transforms. Attempting to continue without.\033[0m" << std::endl;
+            try
+            {
+                std::string key = config["path_INPUT_b1_faUnit"].template get<std::string>();
+                if ( !file_exists(key) ) throw std::invalid_argument(key + " file does not exist.");
+                if ( EXIT_FAILURE == ANTS_APPLY_TRANSFORMS(
+                        key
+                        , config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
+                        , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                        , "default"
+                        , "identity"
+                        , config["ants_interpolation_method_for_resampling"].template get<std::string>()
+                        , 0.0
+                        , 3
+                        , 0
+                        , VERBOSE)
+                    )
+                    std::cout << "\033[1;31mFailed to apply transforms. Attempting to continue without.\033[0m" << std::endl;
+                else
+                    config["path_INPUT_b1_faUnit"] = config["path_OUTPUT_b1_processed_prct"].template get<std::string>();
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
+                std::cout << "\033[1;32mCould not perform transform. Have you ensured the path to the B1 map is correct? Continuing without...\033[0m" << std::endl;
+            }
         }
 
         if ( config["do_ants_smoothing_of_B1_map_in_t1wUNI_space"].template get<bool>() )
         {
-            if ( EXIT_FAILURE == ANTS_SMOOTH_IMAGE(
-                    config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
-                    , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
-                    , 3
-                    , config["ants_smoothing_sigma"].template get<std::string>()
-                    , config["is_ants_smoothing_sigma_in_spacing_units"].template get<bool>()
-                    , config["do_ants_smoothing_using_median_filtering"].template get<bool>()
-                    , VERBOSE)
-                )
-                std::cout << "\033[1;31mFailed to apply Gaussian smoothing. Continuing without.\033[0m" << std::endl;
+            try
+            {
+                std::string key = config["path_INPUT_b1_faUnit"].template get<std::string>();
+                if ( !file_exists(key) ) throw std::invalid_argument(key + " file does not exist.");
+                if ( EXIT_FAILURE == ANTS_SMOOTH_IMAGE(
+                        key
+                        , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                        , 3
+                        , config["ants_smoothing_sigma"].template get<std::string>()
+                        , config["is_ants_smoothing_sigma_in_spacing_units"].template get<bool>()
+                        , config["do_ants_smoothing_using_median_filtering"].template get<bool>()
+                        , VERBOSE)
+                    )
+                    std::cout << "\033[1;31mFailed to apply Gaussian smoothing. Continuing without.\033[0m" << std::endl;
+                else
+                    config["path_INPUT_b1_faUnit"] = config["path_OUTPUT_b1_processed_prct"].template get<std::string>();
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
+                std::cout << "\033[1;32mFailed to perform smoothing. Have you ensured the path to the B1 map is correct? Continuing without...\033[0m" << std::endl;
+            }
         }
 
 
@@ -430,27 +470,43 @@ int main(int argc, char const *argv[])
              */
             #pragma omp task
             {
-                const RNifti::NiftiImage volume_B1_in_UNI_SPACE_0_to_4095 = RNifti::NiftiImage(
-                    config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
-                    , true
-                );
-                eigen_B1_in_UNI_SPACE_relative = B1_TO_RELATIVE_B1<Eigen::ArrayXd, Eigen::ArrayXd>(
-                    Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
-                        volume_B1_in_UNI_SPACE_0_to_4095.getData<double>().data(),
-                        SIZE
-                    )
-                    , config["target_b1_faUnit"].template get<double>()
-                    , config["vref_b1_vUnit"].template get<double>()
-                    , config["vref_t1wUNI_vUnit"].template get<double>()
-                    , VERBOSE
-                );
+                try
+                {
+                    const RNifti::NiftiImage volume_B1_in_UNI_SPACE_0_to_4095 = RNifti::NiftiImage(
+                        config["path_INPUT_b1_faUnit"].template get<std::string>()
+                        , true
+                    );
+                    eigen_B1_in_UNI_SPACE_relative = B1_TO_RELATIVE_B1<Eigen::ArrayXd, Eigen::ArrayXd>(
+                        Eigen::Map<Eigen::ArrayXd, Eigen::Unaligned>(
+                            volume_B1_in_UNI_SPACE_0_to_4095.getData<double>().data(),
+                            SIZE
+                        )
+                        , config["target_b1_faUnit"].template get<double>()
+                        , config["vref_b1_vUnit"].template get<double>()
+                        , config["vref_t1wUNI_vUnit"].template get<double>()
+                        , VERBOSE
+                    );
+                }
+                catch (const std::exception &e)
+                {
+                    std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
+                    std::cout << "\033[1;32mCould not load B1 map. Have you ensured the path to the B1 map is correct? Continuing with B1 = 100% everywhere.\033[0m" << std::endl;
+                    eigen_B1_in_UNI_SPACE_relative = Eigen::ArrayXd::Ones(SIZE);
+                }
 
                 if ( config["do_bound_B1_to_valid_interpolation_range"].template get<bool>() )
-                    eigen_B1_in_UNI_SPACE_relative = MASK_FROM_RANGE<Eigen::ArrayXd>(
+                    eigen_B1_in_UNI_SPACE_relative = BOUND_TO_RANGE<Eigen::ArrayXd>(
                         eigen_B1_in_UNI_SPACE_relative
                         , RANGE_B1.at(1)
                         , RANGE_B1.at(1)
                         , RANGE_B1.at(2)
+                        , RANGE_B1.at(2)
+                        , VERBOSE
+                    );
+                else
+                    mask_B1 = MASK_FROM_RANGE<Eigen::ArrayXd>(
+                        eigen_B1_in_UNI_SPACE_relative
+                        , RANGE_B1.at(1)
                         , RANGE_B1.at(2)
                         , VERBOSE
                     );
@@ -535,6 +591,7 @@ int main(int argc, char const *argv[])
             , config["inversion_efficiency"].template get<double>()
             , config["M0"].template get<double>()
             , &bijectivity_range
+            , config["do_restore_bijectivity_of_qT1_along_local_B1"].template get<bool>()
             , VERBOSE
         );
 
@@ -542,9 +599,11 @@ int main(int argc, char const *argv[])
         /* 
             GENERATING THE MAP: QT1 (ms)
             MAKING IT INTO AN STD VECTOR OF DOUBLE
-            MARKING IT FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
+            GENERATING THE GLOBAL MASK
+            MARKING GLOBAL MASK FOR EXPORT IN `BOOLEAN` DATATYPE
+            MARKING QT1 FOR EXPORT IN `DATATYPE` WITH INTEGER ROUNDING IF `DO_ROUND`
          */
-        data_QT1_in_unit = COMPUTE_QT1MAP_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+        Eigen::ArrayXd data_QT1_in_unit = COMPUTE_QT1MAP_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
             interp
             , eigen_B1_in_UNI_SPACE_relative
             , eigen_T1W_UNI_centered
@@ -552,22 +611,27 @@ int main(int argc, char const *argv[])
             , VERBOSE
         );
 
-        if ( config["do_mask_outside_valid_qT1_interpolation_range"].template get<bool>() )
-            data_QT1_in_unit = MASK_FROM_RANGE<Eigen::ArrayXd>(
-                data_QT1_in_unit
-                , bijectivity_range.first
-                , 0
-                , bijectivity_range.second
-                , 0
-                , VERBOSE
+        mask_qT1 = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_QT1_in_unit, VERBOSE);
+        mask_global = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(mask_qT1, mask_B1, 0, VERBOSE);
+
+        export_mask_vector.push_back(
+                std::pair<std::string, Eigen::ArrayXd*>(
+                    config["path_OUTPUT_global_mask"].template get<std::string>()
+                    , &mask_global
+                )
             );
+
+        if ( config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+            data_QT1_in_unit_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(data_QT1_in_unit, mask_global, 0, VERBOSE);
+        else
+            data_QT1_in_unit_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(data_QT1_in_unit, mask_qT1, 4095, VERBOSE);
 
         if ( config["compute_qT1"].template get<bool>() )
         {
             export_vector.push_back(
                 std::pair<std::string, Eigen::ArrayXd*>(
                     config["path_OUTPUT_qT1_msUnit"].template get<std::string>()
-                    , &data_QT1_in_unit
+                    , &data_QT1_in_unit_masked
                 )
             );
         }
@@ -581,14 +645,19 @@ int main(int argc, char const *argv[])
         if ( config["compute_qR1"].template get<bool>() )
         {
             Eigen::ArrayXd data_QR1_in_pkunit = (Eigen::ArrayXd) (1e6 * COMPUTE_QR1MAP_IN_PER_UNIT<Eigen::ArrayXd, Eigen::ArrayXd>(
-                data_QT1_in_unit.array()
+                data_QT1_in_unit_masked.array()
                 , VERBOSE
             ).array());
+            
+            if ( config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+                data_QR1_in_pkunit_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(data_QR1_in_pkunit, mask_global, 0, VERBOSE);
+            else
+                data_QR1_in_pkunit_masked = data_QR1_in_pkunit;
 
             export_vector.push_back(
                 std::pair<std::string, Eigen::ArrayXd*>(
                     config["path_OUTPUT_qR1_pksUnit"].template get<std::string>()
-                    , &data_QR1_in_pkunit
+                    , &data_QR1_in_pkunit_masked
                 )
             );
         }
@@ -604,7 +673,7 @@ int main(int argc, char const *argv[])
         if ( config["compute_t1wUNI_B1Corrected"].template get<bool>() || config["compute_t1wUNI_B1Corrected_DEN"].template get<bool>() )
         {
             Eigen::ArrayXd data_T1W_UNI_CORRECTED_centered = COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
-                data_QT1_in_unit
+                data_QT1_in_unit_masked
                 , config["t_inversion1_msUnit"].template get<double>()
                 , config["t_inversion2_msUnit"].template get<double>()
                 , config["t_repeat_MP2RAGE_msUnit"].template get<double>()
@@ -628,7 +697,10 @@ int main(int argc, char const *argv[])
                 else
                     data_T1W_UNI_CORRECTED_0_TO_4095 = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered.matrix().reshaped(), VERBOSE);
 
-                data_T1W_UNI_CORRECTED_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095, data_QT1_in_unit, VERBOSE);
+                if ( config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+                    data_T1W_UNI_CORRECTED_0_TO_4095_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095, mask_global, 0, VERBOSE);
+                else
+                    data_T1W_UNI_CORRECTED_0_TO_4095_masked = data_T1W_UNI_CORRECTED_0_TO_4095;
 
                 export_vector.push_back(
                     std::pair<std::string, Eigen::ArrayXd*>(
@@ -660,7 +732,10 @@ int main(int argc, char const *argv[])
                 else
                     data_T1W_UNI_CORRECTED_0_TO_4095_denoised = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_centered_denoised.matrix().reshaped(), VERBOSE);
 
-                data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095_denoised, data_QT1_in_unit, VERBOSE);
+                if ( config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+                    data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(data_T1W_UNI_CORRECTED_0_TO_4095_denoised, mask_global, 0, VERBOSE);
+                else
+                    data_T1W_UNI_CORRECTED_0_TO_4095_denoised_masked = data_T1W_UNI_CORRECTED_0_TO_4095_denoised;
         
                 export_vector.push_back(
                     std::pair<std::string, Eigen::ArrayXd*>(
@@ -710,8 +785,10 @@ int main(int argc, char const *argv[])
          */
         if ( config["compute_EDGE"].template get<bool>() || config["compute_EDGE_DEN"].template get<bool>() )
         {
+            Eigen::ArrayXd SYN_EDGE_0_TO_4095;
+         
             Eigen::ArrayXd SYN_EDGE = EDGE_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
-                data_QT1_in_unit.matrix().reshaped()
+                data_QT1_in_unit_masked.matrix().reshaped()
                 , config["edge_t_inversion1_msUnit"].template get<double>()
                 , config["edge_t_inversion2_msUnit"].template get<double>()
                 , config["edge_t_repeat_MP2RAGE_msUnit"].template get<double>()
@@ -730,12 +807,17 @@ int main(int argc, char const *argv[])
             else
                 SYN_EDGE_0_TO_4095 = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_EDGE.matrix().reshaped(), VERBOSE);
 
+            if ( config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+                SYN_EDGE_0_TO_4095_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_EDGE_0_TO_4095, mask_global, 0, VERBOSE);
+            else
+                SYN_EDGE_0_TO_4095_masked = SYN_EDGE_0_TO_4095;
+
             if ( config["compute_EDGE"].template get<bool>())
             {
                 export_vector.push_back(
                     std::pair<std::string, Eigen::ArrayXd*>(
                         config["path_OUTPUT_EDGE_dicomUnit"].template get<std::string>()
-                        , &SYN_EDGE_0_TO_4095
+                        , &SYN_EDGE_0_TO_4095_masked
                     )
                 );
             }
@@ -763,7 +845,7 @@ int main(int argc, char const *argv[])
                 }
                 else
                     SYN_EDGE_0_TO_4095_denoised = DENOISE_ALT<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
-                        SYN_EDGE_0_TO_4095.matrix().reshaped()
+                        SYN_EDGE_0_TO_4095_masked.matrix().reshaped()
                         , eigen_T1W_INV1_0_to_4095
                         , eigen_T1W_INV2_0_to_4095
                         , config["noise_shift"].template get<double>()
@@ -792,7 +874,7 @@ int main(int argc, char const *argv[])
             Eigen::ArrayXd SYN_FLAWS_0_TO_4095;
 
             Eigen::ArrayXd SYN_FLAWS = FLAWS_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd>(
-                data_QT1_in_unit.matrix().reshaped()
+                data_QT1_in_unit_masked.matrix().reshaped()
                 , config["flaws1_t_inversion1_msUnit"].template get<double>()
                 , config["flaws1_t_inversion2_msUnit"].template get<double>()
                 , config["flaws1_t_repeat_MP2RAGE_msUnit"].template get<double>()
@@ -821,7 +903,10 @@ int main(int argc, char const *argv[])
             else
                 SYN_FLAWS_0_TO_4095 = TO_12BITS_RANGE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS.matrix().reshaped(), VERBOSE);
 
-            SYN_FLAWS_0_TO_4095_masked = MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS_0_TO_4095, data_QT1_in_unit, VERBOSE);
+            if ( config["export_quantitative_instead_of_qualitative"].template get<bool>() )
+                SYN_FLAWS_0_TO_4095_masked = APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(SYN_FLAWS_0_TO_4095, mask_global, 0, VERBOSE);
+            else
+                SYN_FLAWS_0_TO_4095_masked = SYN_FLAWS_0_TO_4095;
 
             if ( config["compute_FLAWS"].template get<bool>() )
             {
@@ -881,7 +966,7 @@ int main(int argc, char const *argv[])
 
         /*
             BRING PROCESSED B1 MAP FROM RELATIVE TO PERCENT LEVELS
-            EXPORT ALL MAPS TO DISK
+            EXPORT ALL MAPS & MASKS TO DISK
          */
         eigen_B1_in_UNI_SPACE_relative = eigen_B1_in_UNI_SPACE_relative.array() * 100.;
         export_vector.push_back(
@@ -890,6 +975,17 @@ int main(int argc, char const *argv[])
                 , &eigen_B1_in_UNI_SPACE_relative
             )
         );
+        
+        EXPORT_RESULTS<Eigen::ArrayXd>(
+            export_mask_vector
+            , volume_T1W_UNI_0_to_4095
+            , 2
+            , false
+            , std::min(N_THREADS, (int) export_mask_vector.size())
+            , VERBOSE
+        );
+        
+        export_mask_vector.clear();
 
         EXPORT_RESULTS<Eigen::ArrayXd>(
             export_vector

@@ -98,7 +98,7 @@ static YT COMPUTE_QR1MAP_IN_PER_UNIT(const XT &QT1Map_in_unit, bool verbose = tr
  * @param tInversion2_in_unit 
  * @param TRmp2rage_in_unit 
  * @param tEchoSpacing_in_unit 
- * @param nBefore 
+ * @param nBefore
  * @param nAfter 
  * @param FA1_in_degrees 
  * @param FA2_in_degrees 
@@ -109,9 +109,10 @@ static YT COMPUTE_QR1MAP_IN_PER_UNIT(const XT &QT1Map_in_unit, bool verbose = tr
  * @return _2D::LinearDelaunayTriangleInterpolator<D> 
  */
 template <typename D, typename XT, typename YT>
-static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::pair<double, double> *bijectivity_range, bool verbose = true)
+static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
 {
     boost::timer::auto_cpu_timer timer;
+    Eigen::MatrixXd UNIVectorRange_centered_bijectivity_restored;
 
     if (verbose)
     {
@@ -126,7 +127,13 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(cons
     , nBefore, nAfter, FA1_in_degrees, FA2_in_degrees
     , inversionEfficiency, M0, verbose);
 
-    auto UNIVectorRange_centered_bijectivity_restored = RESTORE_BIJECTIVITY<const Eigen::MatrixXd, const YT>(UNIVectorRange_centered, QT1VectorRange_in_unit, bijectivity_range, verbose);
+    if ( do_restore_bijectivity )
+        UNIVectorRange_centered_bijectivity_restored = RESTORE_BIJECTIVITY<const Eigen::MatrixXd, const YT>(UNIVectorRange_centered, QT1VectorRange_in_unit, bijectivity_range, verbose);
+    else
+    {
+        std::cout << "/!\\ [WARNING] Continuing without ensuring bijectivity of qT1 along the local B1." << std::endl;
+        UNIVectorRange_centered_bijectivity_restored = UNIVectorRange_centered;
+    }
 
     return INTERPOLATOR<D, const XT, const Eigen::MatrixXd, const YT>(
         (B1VectorRange_relative.matrix() * XT::Ones(QT1VectorRange_in_unit.size()).matrix().transpose()).reshaped()
@@ -190,13 +197,44 @@ static YT COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED(const XT &QT1Map_in_unit,
  * 
  * @tparam XT 
  * @tparam YT 
+ * @param REFERENCE 
+ * @param verbose 
+ * @return XT 
+ */
+template <typename XT, typename YT>
+static XT MASK_FROM_REFERENCE(const YT &REFERENCE, bool verbose = true)
+{
+    boost::timer::auto_cpu_timer timer;
+
+    if (verbose)
+    {
+        std::cout << "=======================================================" << "\n"
+                  << "====== Computing mask map from reference's zeros ======" << "\n"
+                  << "======================================================="
+                  <<  std::endl;
+    }
+
+    XT out = XT::Ones(REFERENCE.size());
+
+    for (size_t i = 0 ; i < REFERENCE.size() ; ++i)
+        if ( REFERENCE(i) == 0 )
+            out(i) = 0;
+    
+    return out;
+}
+
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
  * @param ARRAY_TO_MASK 
  * @param REFERENCE 
  * @param verbose 
  * @return XT 
  */
 template <typename XT, typename YT>
-static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool verbose = true)
+static XT APPLY_MASK(const XT &ARRAY_TO_MASK, const YT &REFERENCE, const double in_place_value = 0, bool verbose = true)
 {
     assert(ARRAY_TO_MASK.size() == REFERENCE.size());
 
@@ -213,7 +251,7 @@ static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool
     XT out = XT::Zero(ARRAY_TO_MASK.size());
 
     for (size_t i = 0 ; i < ARRAY_TO_MASK.size() ; ++i)
-        out(i) = REFERENCE(i) == 0 ? 0 : ARRAY_TO_MASK(i);
+        out(i) = REFERENCE(i) == 0 ? in_place_value : ARRAY_TO_MASK(i);
     
     return out;
 }
@@ -223,12 +261,15 @@ static XT MASK_FROM_REFERENCE(const XT &ARRAY_TO_MASK, const YT &REFERENCE, bool
  * 
  * @tparam T 
  * @param ARRAY_TO_MASK 
- * @param RANGE 
+ * @param min 
+ * @param min_replacement_value 
+ * @param max 
+ * @param max_replacement_value 
  * @param verbose 
  * @return T 
  */
 template <typename T>
-static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
+static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double max, bool verbose = true)
 {
     assert(min < max);
 
@@ -237,7 +278,42 @@ static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double min_replacem
     if (verbose)
     {
         std::cout << "===================================================" << "\n"
-                  << "===== Computing masked map from min/max range =====" << "\n"
+                  << "====== Computing mask map from min/max range ======" << "\n"
+                  << "==================================================="
+                  <<  std::endl;
+    }
+
+    T out = T::Zero(ARRAY_TO_MASK.size());
+
+    for (size_t i = 0 ; i < ARRAY_TO_MASK.size() ; ++i)
+        out(i) = 1 - (ARRAY_TO_MASK(i) < min) - (ARRAY_TO_MASK(i) > max);
+
+    return out;
+}
+
+/**
+ * @brief 
+ * 
+ * @tparam T 
+ * @param ARRAY_TO_MASK 
+ * @param min 
+ * @param min_replacement_value 
+ * @param max 
+ * @param max_replacement_value 
+ * @param verbose 
+ * @return T 
+ */
+template <typename T>
+static T BOUND_TO_RANGE(const T &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
+{
+    assert(min < max);
+
+    boost::timer::auto_cpu_timer timer;
+
+    if (verbose)
+    {
+        std::cout << "===================================================" << "\n"
+                  << "===== Computing bound map from min/max range ======" << "\n"
                   << "==================================================="
                   <<  std::endl;
     }
@@ -455,7 +531,8 @@ static bool DATA_TO_FILE(const std::string &path, const T &data, const RNifti::N
     {
         if ( verbose )
         {
-            stream << "Failed to save to: " << path << "\n" << e.what() << std::endl;
+            stream << "\033[1;31m" << e.what() << "\033[0m\n";
+            stream << "\033[1;32mCould not save file " << path << "\033[0m" << std::endl;
             std::cout << stream.str();
         }
 
@@ -561,17 +638,17 @@ static Eigen::ArrayXd COMPUTE_QR1MAP_IN_PER_UNIT(const Eigen::ArrayXd &QT1Map_in
  * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
  */
 template <typename D, typename T>
-static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::pair<double, double> *bijectivity_range, bool verbose = true)
+static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
 {
-    return INIT_INTERPOLATOR_IN_UNIT<D, T, T>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, verbose);
+    return INIT_INTERPOLATOR_IN_UNIT<D, T, T>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
 }
 
 /**
  * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
  */
-static _2D::LinearDelaunayTriangleInterpolator<double> INIT_INTERPOLATOR_IN_UNIT(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::pair<double, double> *bijectivity_range, bool verbose = true)
+static _2D::LinearDelaunayTriangleInterpolator<double> INIT_INTERPOLATOR_IN_UNIT(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
 {
-    return INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, verbose);
+    return INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
 }
 
 /**
@@ -595,25 +672,50 @@ static Eigen::ArrayXd COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED(const Eigen::
  * @brief Overload of `MASK_FROM_REFERENCE<XT, YT>(...)`
  */
 template <typename T>
-static T MASK_FROM_REFERENCE(const T &ARRAY_TO_MASK, const T &REFERENCE, bool verbose = true)
+static T MASK_FROM_REFERENCE(const T &REFERENCE, bool verbose = true)
 {
-    return MASK_FROM_REFERENCE<T, T>(ARRAY_TO_MASK, REFERENCE, verbose); 
+    return MASK_FROM_REFERENCE<T, T>(REFERENCE, verbose); 
 }
 
 /**
  * @brief Overload of `MASK_FROM_REFERENCE<XT, YT>(...)`
  */
-static Eigen::ArrayXd MASK_FROM_REFERENCE(const Eigen::ArrayXd &ARRAY_TO_MASK, const Eigen::ArrayXd &REFERENCE, bool verbose = true)
+static Eigen::ArrayXd MASK_FROM_REFERENCE(const Eigen::ArrayXd &REFERENCE, bool verbose = true)
 {
-    return MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(ARRAY_TO_MASK, REFERENCE, verbose); 
+    return MASK_FROM_REFERENCE<Eigen::ArrayXd, Eigen::ArrayXd>(REFERENCE, verbose); 
+}
+
+/**
+ * @brief Overload of `APPLY_MASK<XT, YT>(...)`
+ */
+template <typename T>
+static T APPLY_MASK(const T &ARRAY_TO_MASK, const T &REFERENCE, const double in_place_value = 0, bool verbose = true)
+{
+    return APPLY_MASK<T, T>(ARRAY_TO_MASK, REFERENCE, in_place_value, verbose); 
+}
+
+/**
+ * @brief Overload of `APPLY_MASK<XT, YT>(...)`
+ */
+static Eigen::ArrayXd APPLY_MASK(const Eigen::ArrayXd &ARRAY_TO_MASK, const Eigen::ArrayXd &REFERENCE, const double in_place_value = 0, bool verbose = true)
+{
+    return APPLY_MASK<Eigen::ArrayXd, Eigen::ArrayXd>(ARRAY_TO_MASK, REFERENCE, in_place_value, verbose); 
 }
 
 /**
  * @brief Overload of `MASK_FROM_RANGE<XT, YT>(...)`
  */
-static Eigen::ArrayXd MASK_FROM_RANGE(const Eigen::ArrayXd &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
+static Eigen::ArrayXd MASK_FROM_RANGE(const Eigen::ArrayXd &ARRAY_TO_MASK, double min, double max, bool verbose = true)
 {
-    return MASK_FROM_RANGE<Eigen::ArrayXd>(ARRAY_TO_MASK, min, min_replacement_value, max, max_replacement_value, verbose); 
+    return MASK_FROM_RANGE<Eigen::ArrayXd>(ARRAY_TO_MASK, min, max, verbose); 
+}
+
+/**
+ * @brief Overload of `BOUND_TO_RANGE<XT, YT>(...)`
+ */
+static Eigen::ArrayXd BOUND_TO_RANGE(const Eigen::ArrayXd &ARRAY_TO_MASK, double min, double min_replacement_value, double max, double max_replacement_value, bool verbose = true)
+{
+    return BOUND_TO_RANGE<Eigen::ArrayXd>(ARRAY_TO_MASK, min, min_replacement_value, max, max_replacement_value, verbose); 
 }
 
 /**
