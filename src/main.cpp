@@ -129,6 +129,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_bound_B1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
         , {"export_quantitative_instead_of_qualitative", BOOL}
+        , {"export_interpolation_hypersurface_plot", BOOL}
 
         , {"compute_t1wUNI_DEN", BOOL}
         , {"compute_t1wUNI_B1Corrected", BOOL}
@@ -157,6 +158,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"path_OUTPUT_FLAWS_dicomUnit", OUTPUT}
         , {"path_OUTPUT_FLAWS_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_global_mask", OUTPUT}
+        , {"path_OUTPUT_interpolant_hypersurface_gnuplot", OUTPUT}
 
         , {"ants_interpolation_method_for_resampling", STRING}
         , {"ants_smoothing_sigma", STRING}
@@ -224,6 +226,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"array_qT1_msUnit", RANGE}
     };
 
+    int i = 0;
     for ( const auto &[key, value] : map )
     {
         try
@@ -275,12 +278,13 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
                     break;
             }
 
-            std::cout << key << " = " << config[key].dump() << "\n";
+            std::cout << "\033[" << 36 + (i % 2) * 60 << "m" << key << "\033[0m = " << config[key].dump() << "\n";
+            ++i;
             // std::cout << config[key] << " - " << typeid(config[key]).name() << "\n";
         }
         catch (const std::exception &e)
         {
-            std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
+            std::cout << "\033[1;31mFatal error: " << e.what() << "\033[0m\n";
             std::cout << "\033[1;32m" << "RECEIVED >> " << "\033[0m" << config[key].dump() << std::endl;
             throw std::invalid_argument(key + " expects " + expected_type + ".");
         }
@@ -363,7 +367,7 @@ int main(int argc, char const *argv[])
             INITIAL WARNINGS
          */
         if ( !config["export_quantitative_instead_of_qualitative"].template get<bool>() )
-            std::cout << "\033[1;32mYou have chosen to export QUALITATIVE maps. Make sure to use the global mask during QUANTITATIVE analyses.\033[0m" << std::endl;
+            std::cout << "\033[1;33m/!\\ [WARNING] You have chosen to export QUALITATIVE maps. Make sure to use the global mask during QUANTITATIVE analyses.\033[0m" << std::endl;
 
         /* 
             PREPROCESSING THE MAP: B1
@@ -394,8 +398,8 @@ int main(int argc, char const *argv[])
             }
             catch (const std::exception &e)
             {
-                std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
-                std::cout << "\033[1;32mCould not perform transform. Have you ensured the path to the B1 map is correct? Continuing without...\033[0m" << std::endl;
+                std::cout << "\033[1;31mNon-fatal error: " << e.what() << "\033[0m\n";
+                std::cout << "\033[1;33mDetails: Could not perform transform. Have you ensured the path to the B1 map is correct? Continuing without...\033[0m" << std::endl;
             }
         }
 
@@ -420,8 +424,8 @@ int main(int argc, char const *argv[])
             }
             catch (const std::exception &e)
             {
-                std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
-                std::cout << "\033[1;32mFailed to perform smoothing. Have you ensured the path to the B1 map is correct? Continuing without...\033[0m" << std::endl;
+                std::cout << "\033[1;31mNon-fatal error: " << e.what() << "\033[0m\n";
+                std::cout << "\033[1;33mDetails: Could not perform smoothing. Have you ensured the path to the B1 map is correct? Continuing without...\033[0m" << std::endl;
             }
         }
 
@@ -489,8 +493,8 @@ int main(int argc, char const *argv[])
                 }
                 catch (const std::exception &e)
                 {
-                    std::cout << "\033[1;31m" << e.what() << "\033[0m\n";
-                    std::cout << "\033[1;32mCould not load B1 map. Have you ensured the path to the B1 map is correct? Continuing with B1 = 100% everywhere.\033[0m" << std::endl;
+                    std::cout << "\033[1;31mNon-fatal error: " << e.what() << "\033[0m\n";
+                    std::cout << "\033[1;33mDetails: Could not load B1 map. Have you ensured the path to the B1 map is correct? Continuing with B1 = 100% everywhere.\033[0m" << std::endl;
                     eigen_B1_in_UNI_SPACE_relative = Eigen::ArrayXd::Ones(SIZE);
                 }
 
@@ -577,7 +581,7 @@ int main(int argc, char const *argv[])
             , RANGE_T1.at(2)
         );
 
-        auto interp = INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(
+        auto UNIVectorRange_centered_bijectivity_restored = INIT_MP2RAGE_SIGNAL_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
             B1VectorRange_relative
             , QT1VectorRange_in_unit
             , config["t_inversion1_msUnit"].template get<double>()
@@ -595,6 +599,21 @@ int main(int argc, char const *argv[])
             , VERBOSE
         );
 
+        if ( config["export_interpolation_hypersurface_plot"].template get<bool>() )
+            PLOT_INTERPOLATION_HYPERSURFACE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+                B1VectorRange_relative
+                , QT1VectorRange_in_unit
+                , UNIVectorRange_centered_bijectivity_restored
+                , config["path_OUTPUT_interpolant_hypersurface_gnuplot"].template get<std::string>()
+                , VERBOSE
+            );
+
+        auto interp = INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
+            B1VectorRange_relative
+            , UNIVectorRange_centered_bijectivity_restored
+            , QT1VectorRange_in_unit
+            , VERBOSE
+        );
 
         /* 
             GENERATING THE MAP: QT1 (ms)

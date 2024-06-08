@@ -90,6 +90,7 @@ _This is a header-only library so integrating it to existing C++ code should be 
 - ANTs (https://github.com/ANTsX/ANTs)
 - RNifti (https://github.com/jonclayden/RNifti)
 - libinterpolate (https://github.com/CD3/libInterpolate)
+- gnuplot / gnuplot-iostream
 - make / g++
 
 ### Tested for exact reproduction of previous code

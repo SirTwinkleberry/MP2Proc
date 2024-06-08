@@ -47,11 +47,11 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INTERPOLATOR(const XT &X, cons
     {
         std::cout << "Creating 2-dimensional scattered interpolant" << "\n"
                   << "using underlying Delaunay triangulation and linear geometric interpolation" << "\n"
-                  << "-> No extrapolation: values beyond interpolant range are set to 0" << "\n"
-                  << "-> No rescaling of input data" << "\n"
-                  << "-> Powered by libinterpolate (https://github.com/CD3/libInterpolate)" << "\n"
-                  << "              delaunator-cpp (https://github.com/delfrrr/delaunator-cpp)" << "\n"
-                  << "              boost          (https://github.com/boostorg/boost)"
+                  << "\033[33m-> No extrapolation: values beyond interpolant range are set to 0\033[0m" << "\n"
+                  << "\033[93m-> No rescaling of input data: interpolation can be sensitive to scaling issues in the sample points x, y, z\033[0m" << "\n"
+                  << "\033[33m-> Powered by libinterpolate\033[0m (https://github.com/CD3/libInterpolate)" << "\n"
+                  << "              \033[93mdelaunator-cpp\033[0m (https://github.com/delfrrr/delaunator-cpp)" << "\n"
+                  << "              \033[33mboost\033[0m          (https://github.com/boostorg/boost)"
                   << std::endl;
     }
 

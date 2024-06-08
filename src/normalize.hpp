@@ -145,7 +145,7 @@ static T2 TO_UNI_RANGE(const T1 &data, bool verbose = true)
  * @deprecated  As of release 1.0, replaced by {@link #TO_12BITS_RANGE(const T1 &data, bool verbose)}
  */
 template <typename T1, typename T2>
-[[deprecated("Use `T2 TO_12BITS_RANGE(const T1 &data, bool verbose)` instead.")]]
+[[deprecated("\033[1;33mUse `T2 TO_12BITS_RANGE(const T1 &data, bool verbose)` instead.\033[0m")]]
 static T2 TO_12BITS_RANGE_DEPRECATED(const T1 &data, bool verbose = true)
 {
     return _NORMALIZE<T1, T2>(data, 0.5, 4096, "to [0, 4096] range /!\\ [DEPRECATED]", verbose);
@@ -163,7 +163,7 @@ static T2 TO_12BITS_RANGE_DEPRECATED(const T1 &data, bool verbose = true)
  * @deprecated  As of release 1.0, replaced by {@link #TO_UNI_RANGE(const T1 &data, bool verbose)}
  */
 template <typename T1, typename T2>
-[[deprecated("Use `T2 TO_UNI_RANGE(const T1 &data, bool verbose)` instead.")]]
+[[deprecated("\033[1;33mUse `T2 TO_UNI_RANGE(const T1 &data, bool verbose)` instead.\033[0m")]]
 static T2 TO_UNI_RANGE_DEPRECATED(const T1 &data, bool verbose = true)
 {
     return _NORMALIZE<T1, T2>(data, -2048, 1./4096, "to [-.5, .0.499755859375] range /!\\ [DEPRECATED]", verbose);

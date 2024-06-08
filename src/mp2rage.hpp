@@ -50,19 +50,19 @@ static T3 MP2RAGE(const T1 &B1REL, const T2 &QT1, double tInversion1, double tIn
         double qt1step = QT1.size() > 1 ? QT1(1) - QT1(0) : 0;
 
         std::cout << "Computing theoretical T1-weighted MP2RAGE UNI signal" << "\n"
-                  << "Matrix version (currently not suitable for dimensions)" << "\n"
-                  << "B1REL range: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (dimensionless)" << "\n"
-                  << "  QT1 range: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
-                  << "Delay to inversion #1: " << tInversion1 << " (in provided time unit)" << "\n"
-                  << "Delay to inversion #2: " << tInversion2 << " (in provided time unit)" << "\n"
-                  << "MP2RAGE TR           : " << TRmp2rage << " (in provided time unit)" << "\n"
-                  << "Echo Spacing         : " << tEchoSpacing << " (in provided time unit)" << "\n"
-                  << "# of FLASH 'before'  : " << nBefore << "\n"
-                  << "# of FLASH 'after'   : " << nAfter << "\n"
-                  << "FLASH Flip Angle #1  : " << FA1_deg << " (°)" << "\n"
-                  << "FLASH Flip Angle #2  : " << FA2_deg << " (°)" << "\n"
-                  << "Inversion Efficiency : " << inversionEfficiency << "\n"
-                  << "M0                   : " << M0
+                  << "Matrix version (\033[1;33mcurrently not suitable for large dimensions\033[0m)" << "\n"
+                  << "\033[36mB1REL range\033[0m: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (dimensionless)" << "\n"
+                  << "\033[96m  QT1 range\033[0m: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
+                  << "\033[36mDelay to inversion #1\033[0m: " << tInversion1 << " (in provided time unit)" << "\n"
+                  << "\033[96mDelay to inversion #2\033[0m: " << tInversion2 << " (in provided time unit)" << "\n"
+                  << "\033[36mMP2RAGE TR           \033[0m: " << TRmp2rage << " (in provided time unit)" << "\n"
+                  << "\033[96mEcho Spacing         \033[0m: " << tEchoSpacing << " (in provided time unit)" << "\n"
+                  << "\033[36m# of FLASH 'before'  \033[0m: " << nBefore << "\n"
+                  << "\033[96m# of FLASH 'after'   \033[0m: " << nAfter << "\n"
+                  << "\033[36mFLASH Flip Angle #1  \033[0m: " << FA1_deg << " (°)" << "\n"
+                  << "\033[96mFLASH Flip Angle #2  \033[0m: " << FA2_deg << " (°)" << "\n"
+                  << "\033[36mInversion Efficiency \033[0m: " << inversionEfficiency << "\n"
+                  << "\033[96mM0                   \033[0m: " << M0
                   << std::endl;
     }
 
@@ -160,19 +160,19 @@ static T3 MP2RAGE_FORLOOP(const T1 &B1REL, const T2 &QT1, double tInversion1, do
 
         std::cout << "Computing theoretical T1-weighted MP2RAGE UNI signal" << "\n"
                   << "For-loop version" << "\n"
-                  << "B1REL range: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (dimensionless)" << "\n"
-                  << "  QT1 range: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
-                  << "Delay to inversion #1: " << tInversion1 << " (in provided time unit)" << "\n"
-                  << "Delay to inversion #2: " << tInversion2 << " (in provided time unit)" << "\n"
-                  << "MP2RAGE TR           : " << TRmp2rage << " (in provided time unit)" << "\n"
-                  << "Echo Spacing         : " << tEchoSpacing << " (in provided time unit)" << "\n"
-                  << "# of FLASH 'before'  : " << nBefore << "\n"
-                  << "# of FLASH 'after'   : " << nAfter << "\n"
-                  << "FLASH Flip Angle #1  : " << FA1_deg << " (°)" << "\n"
-                  << "FLASH Flip Angle #2  : " << FA2_deg << " (°)" << "\n"
-                  << "Inversion Efficiency : " << inversionEfficiency << "\n"
-                  << "M0                   : " << M0 << "\n"
-                  << "nThreads             : " << nThreads
+                  << "\033[36mB1REL range\033[0m: [" << B1REL.array().minCoeff() << ", " << B1REL.array().maxCoeff() << "], step: " << b1step << " (dimensionless)" << "\n"
+                  << "\033[96m  QT1 range\033[0m: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
+                  << "\033[36mDelay to inversion #1\033[0m: " << tInversion1 << " (in provided time unit)" << "\n"
+                  << "\033[96mDelay to inversion #2\033[0m: " << tInversion2 << " (in provided time unit)" << "\n"
+                  << "\033[36mMP2RAGE TR           \033[0m: " << TRmp2rage << " (in provided time unit)" << "\n"
+                  << "\033[96mEcho Spacing         \033[0m: " << tEchoSpacing << " (in provided time unit)" << "\n"
+                  << "\033[36m# of FLASH 'before'  \033[0m: " << nBefore << "\n"
+                  << "\033[96m# of FLASH 'after'   \033[0m: " << nAfter << "\n"
+                  << "\033[36mFLASH Flip Angle #1  \033[0m: " << FA1_deg << " (°)" << "\n"
+                  << "\033[96mFLASH Flip Angle #2  \033[0m: " << FA2_deg << " (°)" << "\n"
+                  << "\033[36mInversion Efficiency \033[0m: " << inversionEfficiency << "\n"
+                  << "\033[96mM0                   \033[0m: " << M0 << "\n"
+                  << "\033[36mnThreads             \033[0m: " << nThreads
                   << std::endl;
     }
 
@@ -270,19 +270,19 @@ static T2 MP2RAGE_B1REL_UNITY(const T1 &QT1, double tInversion1, double tInversi
 
         std::cout << "Computing theoretical T1-weighted MP2RAGE UNI signal" << "\n"
                   << "B1REL unity version" << "\n"
-                  << "B1REL range: [1.0, 1.0], step: 0 (dimensionless)" << "\n"
-                  << "  QT1 range: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
-                  << "Delay to inversion #1: " << tInversion1 << " (in provided time unit)" << "\n"
-                  << "Delay to inversion #2: " << tInversion2 << " (in provided time unit)" << "\n"
-                  << "MP2RAGE TR           : " << TRmp2rage << " (in provided time unit)" << "\n"
-                  << "Echo Spacing         : " << tEchoSpacing << " (in provided time unit)" << "\n"
-                  << "# of FLASH 'before'  : " << nBefore << "\n"
-                  << "# of FLASH 'after'   : " << nAfter << "\n"
-                  << "FLASH Flip Angle #1  : " << FA1_deg << " (°)" << "\n"
-                  << "FLASH Flip Angle #2  : " << FA2_deg << " (°)" << "\n"
-                  << "Inversion Efficiency : " << inversionEfficiency << "\n"
-                  << "M0                   : " << M0 << "\n"
-                  << "nThreads             : " << nThreads
+                  << "\033[36mB1REL range\033[0m: [1.0, 1.0], step: 0 (dimensionless)" << "\n"
+                  << "\033[96m  QT1 range\033[0m: [" << QT1.array().minCoeff() << ", " << QT1.array().maxCoeff() << "], step: " << qt1step << " (in provided time unit)" << "\n"
+                  << "\033[36mDelay to inversion #1\033[0m: " << tInversion1 << " (in provided time unit)" << "\n"
+                  << "\033[96mDelay to inversion #2\033[0m: " << tInversion2 << " (in provided time unit)" << "\n"
+                  << "\033[36mMP2RAGE TR           \033[0m: " << TRmp2rage << " (in provided time unit)" << "\n"
+                  << "\033[96mEcho Spacing         \033[0m: " << tEchoSpacing << " (in provided time unit)" << "\n"
+                  << "\033[36m# of FLASH 'before'  \033[0m: " << nBefore << "\n"
+                  << "\033[96m# of FLASH 'after'   \033[0m: " << nAfter << "\n"
+                  << "\033[36mFLASH Flip Angle #1  \033[0m: " << FA1_deg << " (°)" << "\n"
+                  << "\033[96mFLASH Flip Angle #2  \033[0m: " << FA2_deg << " (°)" << "\n"
+                  << "\033[36mInversion Efficiency \033[0m: " << inversionEfficiency << "\n"
+                  << "\033[96mM0                   \033[0m: " << M0 << "\n"
+                  << "\033[36mnThreads             \033[0m: " << nThreads
                   << std::endl;
     }
 

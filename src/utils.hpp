@@ -18,6 +18,7 @@
 
 #include "externals/include/RNifti.h"
 #include "externals/include/Eigen/Dense"
+#include "externals/include/gnuplot-iostream.h"
 
 #include "src/interpolate.hpp"
 #include "src/mp2rage.hpp"
@@ -48,7 +49,7 @@ static ZT COMPUTE_QT1MAP_IN_UNIT(const _2D::LinearDelaunayTriangleInterpolator<D
 
     if (verbose) {
         std::cout << "===================================================" << "\n" 
-                  << "===== Computing qT1 map in provided time unit =====" << "\n"
+                  << "===== \033[1;35mComputing qT1 map in provided time unit\033[0m =====" << "\n"
                   << "===================================================" << "\n"
                   << "Using " << nThreads << " thread(s)"
                   << std::endl;
@@ -78,7 +79,7 @@ static YT COMPUTE_QR1MAP_IN_PER_UNIT(const XT &QT1Map_in_unit, bool verbose = tr
     if (verbose)
     {
         std::cout << "=======================================================" << "\n"
-                  << "===== Computing qR1 map in provided per time unit =====" << "\n"
+                  << "===== \033[1;35mComputing qR1 map in provided per time unit\033[0m =====" << "\n"
                   << "======================================================="
                   <<  std::endl;
     }
@@ -89,27 +90,28 @@ static YT COMPUTE_QR1MAP_IN_PER_UNIT(const XT &QT1Map_in_unit, bool verbose = tr
 /**
  * @brief 
  * 
- * @tparam D 
  * @tparam XT 
  * @tparam YT 
+ * @tparam ZT 
  * @param B1VectorRange_relative 
  * @param QT1VectorRange_in_unit 
  * @param tInversion1_in_unit 
  * @param tInversion2_in_unit 
  * @param TRmp2rage_in_unit 
  * @param tEchoSpacing_in_unit 
- * @param nBefore
+ * @param nBefore 
  * @param nAfter 
  * @param FA1_in_degrees 
  * @param FA2_in_degrees 
  * @param inversionEfficiency 
  * @param M0 
  * @param bijectivity_range 
+ * @param do_restore_bijectivity 
  * @param verbose 
- * @return _2D::LinearDelaunayTriangleInterpolator<D> 
+ * @return ZT 
  */
-template <typename D, typename XT, typename YT>
-static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
+template <typename XT, typename YT, typename ZT>
+static ZT INIT_MP2RAGE_SIGNAL_CENTERED(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
 {
     boost::timer::auto_cpu_timer timer;
     Eigen::MatrixXd UNIVectorRange_centered_bijectivity_restored;
@@ -117,7 +119,7 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(cons
     if (verbose)
     {
         std::cout << "======================================================" << "\n"
-                  << "===== Initializing Linear Scattered Interpolator =====" << "\n"
+                  << "====== \033[1;35mInitializing theoretical MP2RAGE signal\033[0m =======" << "\n"
                   << "======================================================"
                   <<  std::endl;
     }
@@ -131,15 +133,129 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(cons
         UNIVectorRange_centered_bijectivity_restored = RESTORE_BIJECTIVITY<const Eigen::MatrixXd, const YT>(UNIVectorRange_centered, QT1VectorRange_in_unit, bijectivity_range, verbose);
     else
     {
-        std::cout << "/!\\ [WARNING] Continuing without ensuring bijectivity of qT1 along the local B1." << std::endl;
+        std::cout << "\033[1;33m/!\\ [WARNING] Continuing without ensuring bijectivity of qT1 along the local B1.\033[0m" << std::endl;
         UNIVectorRange_centered_bijectivity_restored = UNIVectorRange_centered;
     }
 
-    return INTERPOLATOR<D, const XT, const Eigen::MatrixXd, const YT>(
+    return UNIVectorRange_centered_bijectivity_restored.matrix().reshaped();
+}
+
+/**
+ * @brief 
+ * 
+ * @tparam D 
+ * @tparam XT 
+ * @tparam YT 
+ * @tparam ZT 
+ * @param B1VectorRange_relative 
+ * @param UNIVectorRange_centered 
+ * @param QT1VectorRange_in_unit 
+ * @param verbose 
+ * @return _2D::LinearDelaunayTriangleInterpolator<D> 
+ */
+template <typename D, typename XT, typename YT, typename ZT>
+static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const XT &B1VectorRange_relative, const YT &UNIVectorRange_centered, const ZT &QT1VectorRange_in_unit, bool verbose = true)
+{
+    boost::timer::auto_cpu_timer timer;
+
+    if (verbose)
+    {
+        std::cout << "======================================================" << "\n"
+                  << "===== \033[1;35mInitializing Linear Scattered Interpolator\033[0m =====" << "\n"
+                  << "======================================================"
+                  <<  std::endl;
+    }
+
+    return INTERPOLATOR<D, const XT, const YT, const ZT>(
         (B1VectorRange_relative.matrix() * XT::Ones(QT1VectorRange_in_unit.size()).matrix().transpose()).reshaped()
-        , UNIVectorRange_centered_bijectivity_restored.matrix().reshaped()
+        , UNIVectorRange_centered.matrix().reshaped()
         , (YT::Ones(B1VectorRange_relative.size()).matrix() * QT1VectorRange_in_unit.matrix().transpose()).reshaped()
         , verbose);
+}
+
+/**
+ * @brief 
+ * 
+ * @tparam XT 
+ * @tparam YT 
+ * @tparam ZT 
+ * @param B1VectorRange_relative 
+ * @param QT1VectorRange_in_unit 
+ * @param UNIVectorRange_centered 
+ * @param verbose 
+ * @return true 
+ * @return false 
+ */
+template <typename XT, typename YT, typename ZT>
+bool PLOT_INTERPOLATION_HYPERSURFACE(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, const ZT UNIVectorRange_centered, std::string path, bool verbose)
+{
+    boost::timer::auto_cpu_timer timer;
+
+    if (verbose)
+    {
+        std::cout << "======================================================" << "\n"
+                  << "========= \033[1;35mPlotting Interpolant Hypersurface\033[0m ==========" << "\n"
+                  << "======================================================"
+                  <<  std::endl;
+    }
+
+    // Create a script which can be manually fed into gnuplot later:
+	//    Gnuplot gp(">script.gp");
+	// Create script and also feed to gnuplot:
+	//    Gnuplot gp("tee plot.gp | gnuplot -persist");
+	// '-' means read from stdin.  The send1d() function sends data to gnuplot's stdin.
+	// Don't forget to put "\n" at the end of each line!
+
+    Gnuplot gp("tee " + path + " | gnuplot -persist");
+    
+
+    // gp << "set term webp animate delay 100 size 300,300\n";
+    // gp << "set output 'world.webp'\n";
+
+    // std::cout << B1VectorRange_relative.size() << std::endl;
+    // std::cout << QT1VectorRange_in_unit.size() << std::endl;
+    // std::cout << UNIVectorRange_centered.matrix().reshaped().size() << std::endl;
+
+    gp << "set title 'splot'\n";
+    gp << "set term qt size 1280,720\n";
+    gp << "set nokey\n";
+    // gp << "set hidden3d\n";
+    gp << "set grid\n";
+    gp << "set yrange [10:200]\n";
+    gp << "set xrange [4095:100]\n";
+    gp << "set style fill transparent solid 0.2\n";
+    gp << "set samples 2\n";
+    gp << "set isosamples 2\n";
+    gp << "set cbrange[-0.5:-0.45]\n";
+    gp << "set palette defined ( 0 \"purple\", 0.166 \"blue\", 0.333 \"cyan\", 0.5 \"green\", 0.66 \"yellow\", 0.75 \"yellow\", 0.83 \"orange\", 1 \"red\" )\n";
+    // gp << "set palette defined ( 0 \"purple\", 0.02 \"blue\", 0.04 \"cyan\", 0.06 \"green\", 0.08 \"yellow\", 0.1 \"white\", 1 \"red\" )\n";
+    gp << "set view 60, 30, 1, 1\n";
+    gp << "set contour\n";
+    gp << "set cntrparam levels incr -0.5,0.001,-0.48\n";
+    gp << "\n";
+    gp << "\n";
+
+    gp << "$matrix << EOD\n";
+	gp.send2d(UNIVectorRange_centered.matrix().reshaped(B1VectorRange_relative.size(), QT1VectorRange_in_unit.size()));
+    gp << "EOD\n";
+
+    gp << "splot '$matrix' notitle with pm3d\n";
+    // gp << "}\n";
+    // gp << "unset output\n";
+
+    // gp << "splot '-' with lines title 'Test'\n";
+	// gp.send1d(boost::make_tuple(X, Y, Z));
+
+    /*
+        For Windows, prompt for a keystroke before the Gnuplot object goes out of scope
+        so that the gnuplot window doesn't get closed.
+     */
+    #ifdef _WIN32
+        std::cout << "Press enter to close figure and continue." << std::endl;
+        std::cin.get();
+    #endif
+
+    return true;
 }
 
 /**
@@ -170,8 +286,8 @@ static YT COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED(const XT &QT1Map_in_unit,
     if (verbose)
     {
         std::cout << "==============================================" << "\n"
-                  << "=====   Computing T1-weighted UNI map    =====" << "\n"
-                  << "===== with back propagated B1 correction =====" << "\n"
+                  << "===== \033[1;35m  Computing T1-weighted UNI map\033[0m    =====" << "\n"
+                  << "===== \033[1;35mwith back propagated B1 correction\033[0m =====" << "\n"
                   << "=============================================="
                   <<  std::endl;
     }
@@ -209,7 +325,7 @@ static XT MASK_FROM_REFERENCE(const YT &REFERENCE, bool verbose = true)
     if (verbose)
     {
         std::cout << "=======================================================" << "\n"
-                  << "====== Computing mask map from reference's zeros ======" << "\n"
+                  << "====== \033[1;35mComputing mask map from reference's zeros\033[0m ======" << "\n"
                   << "======================================================="
                   <<  std::endl;
     }
@@ -243,7 +359,7 @@ static XT APPLY_MASK(const XT &ARRAY_TO_MASK, const YT &REFERENCE, const double 
     if (verbose)
     {
         std::cout << "=======================================================" << "\n"
-                  << "===== Computing masked map from reference's zeros =====" << "\n"
+                  << "===== \033[1;35mComputing masked map from reference's zeros\033[0m =====" << "\n"
                   << "======================================================="
                   <<  std::endl;
     }
@@ -278,7 +394,7 @@ static T MASK_FROM_RANGE(const T &ARRAY_TO_MASK, double min, double max, bool ve
     if (verbose)
     {
         std::cout << "===================================================" << "\n"
-                  << "====== Computing mask map from min/max range ======" << "\n"
+                  << "====== \033[1;35mComputing mask map from min/max range\033[0m ======" << "\n"
                   << "==================================================="
                   <<  std::endl;
     }
@@ -313,7 +429,7 @@ static T BOUND_TO_RANGE(const T &ARRAY_TO_MASK, double min, double min_replaceme
     if (verbose)
     {
         std::cout << "===================================================" << "\n"
-                  << "===== Computing bound map from min/max range ======" << "\n"
+                  << "===== \033[1;35mComputing bound map from min/max range\033[0m ======" << "\n"
                   << "==================================================="
                   <<  std::endl;
     }
@@ -352,7 +468,7 @@ static ZT MINIMUM_INTENSITY_PROJECTION(const XT &X, const YT &Y, bool verbose = 
     if (verbose)
     {
         std::cout << "======================================================" << "\n"
-                  << "===== Computing minimum intensity projection map =====" << "\n"
+                  << "===== \033[1;35mComputing minimum intensity projection map\033[0m =====" << "\n"
                   << "======================================================"
                   <<  std::endl;
     }
@@ -388,9 +504,9 @@ static YT EDGE_CENTERED(const XT &QT1Map_in_ms, double tInversion1_in_ms = 820.,
     if (verbose)
     {
         std::cout << "=============================================" << "\n"
-                  << "=====   Computing Synthetic EDGE map    =====" << "\n"
-                  << "=====   from A. MASSIRE et al. (2021)   =====" << "\n"
-                  << "===== DOI: 10.1097/RLI.0000000000000718 =====" << "\n"
+                  << "===== \033[1;35m  Computing Synthetic EDGE map\033[0m    =====" << "\n"
+                  << "===== \033[1;35m  from A. MASSIRE et al. (2021)\033[0m   =====" << "\n"
+                  << "===== \033[1;35mDOI: 10.1097/RLI.0000000000000718\033[0m =====" << "\n"
                   << "============================================="
                   <<  std::endl;
     }
@@ -449,9 +565,9 @@ static YT FLAWS_CENTERED(const XT &QT1Map_in_ms, double FLAWS1_tInversion1_in_ms
     if (verbose)
     {
         std::cout << "=============================================" << "\n"
-                  << "=====   Computing Synthetic FLAWS map   =====" << "\n"
-                  << "=====   from A. MASSIRE et al. (2021)   =====" << "\n"
-                  << "===== DOI: 10.1097/RLI.0000000000000718 =====" << "\n"
+                  << "===== \033[1;35m  Computing Synthetic FLAWS map\033[0m   =====" << "\n"
+                  << "===== \033[1;35m  from A. MASSIRE et al. (2021)\033[0m   =====" << "\n"
+                  << "===== \033[1;35mDOI: 10.1097/RLI.0000000000000718\033[0m =====" << "\n"
                   << "============================================="
                   <<  std::endl;
     }
@@ -532,7 +648,7 @@ static bool DATA_TO_FILE(const std::string &path, const T &data, const RNifti::N
         if ( verbose )
         {
             stream << "\033[1;31m" << e.what() << "\033[0m\n";
-            stream << "\033[1;32mCould not save file " << path << "\033[0m" << std::endl;
+            stream << "\033[1;33mCould not save file " << path << "\033[0m" << std::endl;
             std::cout << stream.str();
         }
 
@@ -559,7 +675,7 @@ static void EXPORT_RESULTS(const std::vector<std::pair<std::string, T*>> &data_v
     if ( verbose )
     {
         std::cout << "=================================" << "\n"
-                  << "=====   EXPORTING RESULTS   =====" << "\n"
+                  << "===== \033[1;35m  EXPORTING RESULTS\033[0m   =====" << "\n"
                   << "=================================" << "\n"
                   << "Using " << n_threads << " thread(s)"
                   <<  std::endl;
@@ -634,22 +750,22 @@ static Eigen::ArrayXd COMPUTE_QR1MAP_IN_PER_UNIT(const Eigen::ArrayXd &QT1Map_in
     return COMPUTE_QR1MAP_IN_PER_UNIT<Eigen::ArrayXd, Eigen::ArrayXd>(QT1Map_in_unit, verbose);
 }
 
-/**
- * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
- */
-template <typename D, typename T>
-static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
-{
-    return INIT_INTERPOLATOR_IN_UNIT<D, T, T>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
-}
+// /**
+//  * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
+//  */
+// template <typename D, typename T>
+// static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
+// {
+//     return INIT_INTERPOLATOR_IN_UNIT<D, T, T>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
+// }
 
-/**
- * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
- */
-static _2D::LinearDelaunayTriangleInterpolator<double> INIT_INTERPOLATOR_IN_UNIT(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
-{
-    return INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
-}
+// /**
+//  * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
+//  */
+// static _2D::LinearDelaunayTriangleInterpolator<double> INIT_INTERPOLATOR_IN_UNIT(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
+// {
+//     return INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
+// }
 
 /**
  * @brief Overload of `COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED<XT, YT>(...)`

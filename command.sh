@@ -84,7 +84,8 @@ else
     echo ">> RELEASE MODE COMPILATION <<"
     CPPFLAGS="-fopenmp -O3 -DNDEBUG -Wno-deprecated-declarations ${@:2}"
 fi
-LIBS="-static -L./externals/lib -Wl,-Bstatic -lboost_timer ${ANTSLIBS[@]} ${ITKLIBS[@]}"
+#
+LIBS="-static -L./externals/lib -Wl,-Bstatic -lboost_timer -lboost_filesystem -lboost_system -lboost_iostreams ${ANTSLIBS[@]} ${ITKLIBS[@]}"
 INCLUDE="-I./externals/include"
 SRC="./src"
 BIN="./bin"
