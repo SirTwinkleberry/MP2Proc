@@ -18,7 +18,6 @@
 
 #include "externals/include/RNifti.h"
 #include "externals/include/Eigen/Dense"
-// #include "externals/include/gnuplot-iostream.h"
 #include "externals/include/matplotlibcpp.h"
 
 #include "src/interpolate.hpp"
@@ -229,15 +228,6 @@ bool PLOT_INTERPOLATION_HYPERSURFACE(const XT &B1VectorRange_relative, const YT 
     matplotlibcpp::show();
 
     matplotlibcpp::detail::_interpreter::kill();
-
-    /*
-        For Windows, prompt for a keystroke before the Gnuplot object goes out of scope
-        so that the gnuplot window doesn't get closed.
-     */
-    #ifdef _WIN32
-        std::cout << "Press enter to close figure and continue." << std::endl;
-        std::cin.get();
-    #endif
 
     return true;
 }
