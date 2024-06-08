@@ -200,66 +200,44 @@ bool PLOT_INTERPOLATION_HYPERSURFACE(const XT &B1VectorRange_relative, const YT 
                   <<  std::endl;
     }
 
-    matplotlibcpp::plot({1,3,2,4});
+    Eigen::ArrayXd x = B1VectorRange_relative.reshaped();
+    Eigen::ArrayXd y = QT1VectorRange_in_unit.reshaped();
+    Eigen::ArrayXd z = UNIVectorRange_centered.reshaped();
+
+    size_t sizeX = x.size();
+    size_t sizeY = y.size();
+    size_t sizeZ = z.size();
+
+    assert(sizeX * sizeY == sizeZ);
+
+    std::vector<std::vector<double>> X;
+    std::vector<std::vector<double>> Y;
+    std::vector<std::vector<double>> Z;
+    auto it = z.begin();
+
+    for ( size_t i = 0 ; i < sizeY ; ++i )
+    {
+        X.push_back(std::vector<double>(x.begin(), x.end()));
+        Y.push_back(std::vector<double>(sizeX, y(i)));
+        Z.push_back(std::vector<double>(it, it + sizeX));
+        it += sizeX;
+    }
+
+    // matplotlibcpp::plot_surface(x, y, z, std::map<std::string, std::string>{{"shade", "False"}});
+    matplotlibcpp::plot_wireframe(X, Y, Z, std::map<std::string, std::string>{{"antialiased","True"}, {"alpha",".5"}, {"rstride","50"}, {"cstride","50"}});
+    matplotlibcpp::set_proj_type("ortho");
     matplotlibcpp::show();
 
     matplotlibcpp::detail::_interpreter::kill();
 
-    // // Create a script which can be manually fed into gnuplot later:
-	// //    Gnuplot gp(">script.gp");
-	// // Create script and also feed to gnuplot:
-	// //    Gnuplot gp("tee plot.gp | gnuplot -persist");
-	// // '-' means read from stdin.  The send1d() function sends data to gnuplot's stdin.
-	// // Don't forget to put "\n" at the end of each line!
-
-    // Gnuplot gp("tee " + path + " | gnuplot -persist");
-    
-
-    // // gp << "set term webp animate delay 100 size 300,300\n";
-    // // gp << "set output 'world.webp'\n";
-
-    // // std::cout << B1VectorRange_relative.size() << std::endl;
-    // // std::cout << QT1VectorRange_in_unit.size() << std::endl;
-    // // std::cout << UNIVectorRange_centered.matrix().reshaped().size() << std::endl;
-
-    // gp << "set title 'splot'\n";
-    // gp << "set term qt size 1280,720\n";
-    // gp << "set nokey\n";
-    // // gp << "set hidden3d\n";
-    // gp << "set grid\n";
-    // gp << "set yrange [10:200]\n";
-    // gp << "set xrange [4095:100]\n";
-    // gp << "set style fill transparent solid 0.2\n";
-    // gp << "set samples 2\n";
-    // gp << "set isosamples 2\n";
-    // gp << "set cbrange[-0.5:-0.45]\n";
-    // gp << "set palette defined ( 0 \"purple\", 0.166 \"blue\", 0.333 \"cyan\", 0.5 \"green\", 0.66 \"yellow\", 0.75 \"yellow\", 0.83 \"orange\", 1 \"red\" )\n";
-    // // gp << "set palette defined ( 0 \"purple\", 0.02 \"blue\", 0.04 \"cyan\", 0.06 \"green\", 0.08 \"yellow\", 0.1 \"white\", 1 \"red\" )\n";
-    // gp << "set view 60, 30, 1, 1\n";
-    // gp << "set contour\n";
-    // gp << "set cntrparam levels incr -0.5,0.001,-0.48\n";
-    // gp << "\n";
-    // gp << "\n";
-
-    // gp << "$matrix << EOD\n";
-	// gp.send2d(UNIVectorRange_centered.matrix().reshaped(B1VectorRange_relative.size(), QT1VectorRange_in_unit.size()));
-    // gp << "EOD\n";
-
-    // gp << "splot '$matrix' notitle with pm3d\n";
-    // // gp << "}\n";
-    // // gp << "unset output\n";
-
-    // // gp << "splot '-' with lines title 'Test'\n";
-	// // gp.send1d(boost::make_tuple(X, Y, Z));
-
-    // /*
-    //     For Windows, prompt for a keystroke before the Gnuplot object goes out of scope
-    //     so that the gnuplot window doesn't get closed.
-    //  */
-    // #ifdef _WIN32
-    //     std::cout << "Press enter to close figure and continue." << std::endl;
-    //     std::cin.get();
-    // #endif
+    /*
+        For Windows, prompt for a keystroke before the Gnuplot object goes out of scope
+        so that the gnuplot window doesn't get closed.
+     */
+    #ifdef _WIN32
+        std::cout << "Press enter to close figure and continue." << std::endl;
+        std::cin.get();
+    #endif
 
     return true;
 }
