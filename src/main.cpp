@@ -608,6 +608,8 @@ int main(int argc, char const *argv[])
                 , VERBOSE
             );
 
+        exit(0);
+
         auto interp = INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
             B1VectorRange_relative
             , UNIVectorRange_centered_bijectivity_restored

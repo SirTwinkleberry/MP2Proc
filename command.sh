@@ -84,14 +84,17 @@ else
     echo ">> RELEASE MODE COMPILATION <<"
     CPPFLAGS="-fopenmp -O3 -DNDEBUG -Wno-deprecated-declarations ${@:2}"
 fi
-#
-LIBS="-static -L./externals/lib -Wl,-Bstatic -lboost_timer -lboost_filesystem -lboost_system -lboost_iostreams ${ANTSLIBS[@]} ${ITKLIBS[@]}"
-INCLUDE="-I./externals/include"
+
+# LIBS="-static -L./externals/lib -Wl,-Bstatic -lboost_timer -lboost_filesystem -lboost_system -lboost_iostreams ${ANTSLIBS[@]} ${ITKLIBS[@]}"
+# INCLUDE="-I./externals/include"
+LIBS="-L./externals/lib -static-libstdc++ -lboost_timer /home/tanderson/anaconda3/envs/math/lib/libpython3.12.so ${ANTSLIBS[@]} ${ITKLIBS[@]}"
+INCLUDE="-I./externals/include -I/home/tanderson/anaconda3/envs/math/lib/python3.12/site-packages/numpy/core/include/"
 SRC="./src"
 BIN="./bin"
 PROGRAM=main
 
 echo "g++ ${CXXFLAGS} ${CPPFLAGS}" \
+    "$(python3-config --cflags) -o test $(python3-config --ldflags --embed) $(python3-config --includes)" \
     "${INCLUDE}" \
     "${SRC}/${PROGRAM}.cpp" \
     "${LIBS}" \
@@ -99,8 +102,23 @@ echo "g++ ${CXXFLAGS} ${CPPFLAGS}" \
     "&& ${BIN}/${PROGRAM} $1"
 
 g++ ${CXXFLAGS} ${CPPFLAGS} \
+    $(python3-config --cflags) -o test $(python3-config --ldflags --embed) $(python3-config --includes) \
     ${INCLUDE} \
     ${SRC}/${PROGRAM}.cpp \
     ${LIBS} \
     -o ${BIN}/${PROGRAM} \
     && ${BIN}/${PROGRAM} $1
+
+# echo "g++ ${CXXFLAGS} ${CPPFLAGS}" \
+#     "${INCLUDE}" \
+#     "${SRC}/${PROGRAM}.cpp" \
+#     "${LIBS}" \
+#     "-o ${BIN}/${PROGRAM}" \
+#     "&& ${BIN}/${PROGRAM} $1"
+
+# g++ ${CXXFLAGS} ${CPPFLAGS} \
+#     ${INCLUDE} \
+#     ${SRC}/${PROGRAM}.cpp \
+#     ${LIBS} \
+#     -o ${BIN}/${PROGRAM} \
+#     && ${BIN}/${PROGRAM} $1
