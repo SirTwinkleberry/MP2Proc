@@ -2774,6 +2774,64 @@ inline void set_proj_type(const std::string &proj_type, const float focal_length
     if (res) Py_DECREF(res);
 }
 
+inline void view_init(const float elev = 30, const float azim = -60, const float roll = 0, const std::string &vertical_axis = "z", const bool share = false)
+{
+    detail::_interpreter::get();
+
+    // Same as with plot_surface: We lazily load the modules here the first time
+    // this function is called because I'm not sure that we can assume "matplotlib
+    // installed" implies "mpl_toolkits installed" on all platforms, and we don't
+    // want to require it for people who don't need 3d plots.
+    static PyObject *mpl_toolkitsmod = nullptr, *axis3dmod = nullptr;
+    if (!mpl_toolkitsmod) {
+        PyObject* mpl_toolkits = PyString_FromString("mpl_toolkits");
+        PyObject* axis3d = PyString_FromString("mpl_toolkits.mplot3d");
+        if (!mpl_toolkits || !axis3d) { throw std::runtime_error("couldnt create string"); }
+
+        mpl_toolkitsmod = PyImport_Import(mpl_toolkits);
+        Py_DECREF(mpl_toolkits);
+        if (!mpl_toolkitsmod) { throw std::runtime_error("Error loading module mpl_toolkits!"); }
+
+        axis3dmod = PyImport_Import(axis3d);
+        Py_DECREF(axis3d);
+        if (!axis3dmod) { throw std::runtime_error("Error loading module mpl_toolkits.mplot3d!"); }
+    }
+
+    PyObject* args = PyTuple_New(5);
+
+    PyObject* py_elev = PyFloat_FromDouble(elev);
+    PyObject* py_azim = PyFloat_FromDouble(azim);
+    PyObject* py_roll = PyFloat_FromDouble(roll);
+    PyObject* py_vertical_axis = PyString_FromString(vertical_axis);
+    PyObject* py_share = PyBool_FromLong(int(share));
+    PyTuple_SetItem(args, 0, py_elev);
+    PyTuple_SetItem(args, 1, py_azim);
+    PyTuple_SetItem(args, 2, py_roll);
+    PyTuple_SetItem(args, 3, py_vertical_axis);
+    PyTuple_SetItem(args, 4, py_share);
+
+    PyObject* kwargs = PyDict_New();
+
+    PyObject *ax =
+    PyObject_CallObject(detail::_interpreter::get().s_python_function_gca,
+      detail::_interpreter::get().s_python_empty_tuple);
+    if (!ax) throw std::runtime_error("Call to gca() failed.");
+    // Py_INCREF(ax);
+
+    PyObject *view_init = PyObject_GetAttrString(ax, "view_init");
+    if (!view_init) throw std::runtime_error("Attribute view_init not found.");
+    // Py_INCREF(view_init);
+
+    PyObject *res = PyObject_Call(view_init, args, kwargs);
+    if (!res) throw std::runtime_error("Call to view_init() failed.");
+    Py_DECREF(view_init);
+
+    Py_DECREF(ax);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    if (res) Py_DECREF(res);
+}
+
 inline void grid(bool flag, const std::map<std::string, std::string>& keywords = std::map<std::string, std::string>())
 {
     detail::_interpreter::get();
