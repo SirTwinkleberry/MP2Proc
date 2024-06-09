@@ -670,7 +670,7 @@ static Eigen::ArrayXd COMPUTE_QR1MAP_IN_PER_UNIT(const Eigen::ArrayXd &QT1Map_in
 template <typename T>
 static T INIT_MP2RAGE_SIGNAL_CENTERED(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
 {
-    return INIT_MP2RAGE_SIGNAL_CENTERED(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
+    return INIT_MP2RAGE_SIGNAL_CENTERED<T, T, T>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
 }
 
 /**
@@ -678,7 +678,7 @@ static T INIT_MP2RAGE_SIGNAL_CENTERED(const T &B1VectorRange_relative, const T &
  */
 static Eigen::ArrayXd INIT_MP2RAGE_SIGNAL_CENTERED(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
 {
-    return INIT_MP2RAGE_SIGNAL_CENTERED(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
+    return INIT_MP2RAGE_SIGNAL_CENTERED<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
 }
 
 /**
