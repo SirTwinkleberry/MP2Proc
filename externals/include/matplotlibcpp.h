@@ -2774,7 +2774,7 @@ inline void set_proj_type(const std::string &proj_type, const float focal_length
     if (res) Py_DECREF(res);
 }
 
-inline void view_init(const float elev = 30, const float azim = -60, const float roll = 0, const std::string &vertical_axis = "z", const bool share = false)
+inline void view_init(const float elev = 30, const float azim = -60, const float roll = 0, const std::string vertical_axis = "z", const bool share = false)
 {
     detail::_interpreter::get();
 
@@ -2802,7 +2802,7 @@ inline void view_init(const float elev = 30, const float azim = -60, const float
     PyObject* py_elev = PyFloat_FromDouble(elev);
     PyObject* py_azim = PyFloat_FromDouble(azim);
     PyObject* py_roll = PyFloat_FromDouble(roll);
-    PyObject* py_vertical_axis = PyString_FromString(vertical_axis);
+    PyObject* py_vertical_axis = PyString_FromString(vertical_axis.c_str());
     PyObject* py_share = PyBool_FromLong(int(share));
     PyTuple_SetItem(args, 0, py_elev);
     PyTuple_SetItem(args, 1, py_azim);
