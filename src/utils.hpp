@@ -2,8 +2,8 @@
  * @file utils.h
  * @author TIMOTHY ANDERSON (SIRTWINKLEBERRY.COM)
  * @brief 
- * @version 1.1
- * @date 2024-03-04
+ * @version 1.2
+ * @date 2024-06-09
  * 
  * @copyright GPLv3 (c) 2024
  * 
@@ -18,7 +18,6 @@
 
 #include "externals/include/RNifti.h"
 #include "externals/include/Eigen/Dense"
-#include "externals/include/matplotlibcpp.h"
 
 #include "src/interpolate.hpp"
 #include "src/mp2rage.hpp"
@@ -171,65 +170,6 @@ static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(cons
         , UNIVectorRange_centered.matrix().reshaped()
         , (YT::Ones(B1VectorRange_relative.size()).matrix() * QT1VectorRange_in_unit.matrix().transpose()).reshaped()
         , verbose);
-}
-
-/**
- * @brief 
- * 
- * @tparam XT 
- * @tparam YT 
- * @tparam ZT 
- * @param B1VectorRange_relative 
- * @param QT1VectorRange_in_unit 
- * @param UNIVectorRange_centered 
- * @param verbose 
- * @return true 
- * @return false 
- */
-template <typename XT, typename YT, typename ZT>
-bool PLOT_INTERPOLATION_HYPERSURFACE(const XT &B1VectorRange_relative, const YT &QT1VectorRange_in_unit, const ZT UNIVectorRange_centered, std::string path, bool verbose)
-{
-    boost::timer::auto_cpu_timer timer;
-
-    if (verbose)
-    {
-        std::cout << "======================================================" << "\n"
-                  << "========= \033[1;35mPlotting Interpolant Hypersurface\033[0m ==========" << "\n"
-                  << "======================================================"
-                  <<  std::endl;
-    }
-
-    Eigen::ArrayXd x = B1VectorRange_relative.reshaped();
-    Eigen::ArrayXd y = QT1VectorRange_in_unit.reshaped();
-    Eigen::ArrayXd z = UNIVectorRange_centered.reshaped();
-
-    size_t sizeX = x.size();
-    size_t sizeY = y.size();
-    size_t sizeZ = z.size();
-
-    assert(sizeX * sizeY == sizeZ);
-
-    std::vector<std::vector<double>> X;
-    std::vector<std::vector<double>> Y;
-    std::vector<std::vector<double>> Z;
-    auto it = z.begin();
-
-    for ( size_t i = 0 ; i < sizeY ; ++i )
-    {
-        X.push_back(std::vector<double>(x.begin(), x.end()));
-        Y.push_back(std::vector<double>(sizeX, y(i)));
-        Z.push_back(std::vector<double>(it, it + sizeX));
-        it += sizeX;
-    }
-
-    // matplotlibcpp::plot_surface(x, y, z, std::map<std::string, std::string>{{"shade", "False"}});
-    matplotlibcpp::plot_wireframe(X, Y, Z, std::map<std::string, std::string>{{"antialiased","True"}, {"alpha",".5"}, {"rstride","50"}, {"cstride","50"}});
-    matplotlibcpp::set_proj_type("ortho");
-    matplotlibcpp::show();
-
-    matplotlibcpp::detail::_interpreter::kill();
-
-    return true;
 }
 
 /**
@@ -724,22 +664,39 @@ static Eigen::ArrayXd COMPUTE_QR1MAP_IN_PER_UNIT(const Eigen::ArrayXd &QT1Map_in
     return COMPUTE_QR1MAP_IN_PER_UNIT<Eigen::ArrayXd, Eigen::ArrayXd>(QT1Map_in_unit, verbose);
 }
 
-// /**
-//  * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
-//  */
-// template <typename D, typename T>
-// static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
-// {
-//     return INIT_INTERPOLATOR_IN_UNIT<D, T, T>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
-// }
+/**
+ * @brief Overload of `INIT_MP2RAGE_SIGNAL_CENTERED<XT, YT, ZT>(...)`
+ */
+template <typename T>
+static T INIT_MP2RAGE_SIGNAL_CENTERED(const T &B1VectorRange_relative, const T &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
+{
+    return INIT_MP2RAGE_SIGNAL_CENTERED(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
+}
 
-// /**
-//  * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
-//  */
-// static _2D::LinearDelaunayTriangleInterpolator<double> INIT_INTERPOLATOR_IN_UNIT(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
-// {
-//     return INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
-// }
+/**
+ * @brief Overload of `INIT_MP2RAGE_SIGNAL_CENTERED<XT, YT, ZT>(...)`
+ */
+static Eigen::ArrayXd INIT_MP2RAGE_SIGNAL_CENTERED(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &QT1VectorRange_in_unit, double tInversion1_in_unit, double tInversion2_in_unit, double TRmp2rage_in_unit, double tEchoSpacing_in_unit, int nBefore, int nAfter, double FA1_in_degrees, double FA2_in_degrees, double inversionEfficiency, double M0, std::vector<std::pair<double, double>> *bijectivity_range, bool do_restore_bijectivity = true, bool verbose = true)
+{
+    return INIT_MP2RAGE_SIGNAL_CENTERED(B1VectorRange_relative, QT1VectorRange_in_unit, tInversion1_in_unit, tInversion2_in_unit, TRmp2rage_in_unit, tEchoSpacing_in_unit, nBefore, nAfter, FA1_in_degrees, FA2_in_degrees, inversionEfficiency, M0, bijectivity_range, do_restore_bijectivity, verbose);
+}
+
+/**
+ * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
+ */
+template <typename D, typename T>
+static _2D::LinearDelaunayTriangleInterpolator<D> INIT_INTERPOLATOR_IN_UNIT(const T &B1VectorRange_relative, const T &UNIVectorRange_centered, const T &QT1VectorRange_in_unit, bool verbose = true)
+{
+    return INIT_INTERPOLATOR_IN_UNIT<D, T, T>(B1VectorRange_relative, UNIVectorRange_centered, QT1VectorRange_in_unit, verbose);
+}
+
+/**
+ * @brief Overload of `INIT_INTERPOLATOR_IN_UNIT<D, XT, YT>(...)`
+ */
+static _2D::LinearDelaunayTriangleInterpolator<double> INIT_INTERPOLATOR_IN_UNIT(const Eigen::ArrayXd &B1VectorRange_relative, const Eigen::ArrayXd &UNIVectorRange_centered, const Eigen::ArrayXd &QT1VectorRange_in_unit, bool verbose = true)
+{
+    return INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd>(B1VectorRange_relative, UNIVectorRange_centered, QT1VectorRange_in_unit, verbose);
+}
 
 /**
  * @brief Overload of `COMPUTE_BACK_B1CORRECTED_T1W_UNIMAP_CENTERED<XT, YT>(...)`
