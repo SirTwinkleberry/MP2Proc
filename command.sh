@@ -92,15 +92,15 @@ BIN="./bin"
 PROGRAM=main
 
 echo "g++ ${CXXFLAGS} ${CPPFLAGS}" \
-    "$(python3-config --cflags) -o test $(python3-config --ldflags --embed) $(python3-config --includes)" \
+    "$(python3-config --cflags) $(python3-config --ldflags --embed) $(python3-config --includes)" \
     "${INCLUDE}" \
     "${SRC}/${PROGRAM}.cpp" \
-    "${LIBS}" \
+    "${LIBS}"\
     "-o ${BIN}/${PROGRAM}" \
     "&& ${BIN}/${PROGRAM} $1"
 
 g++ ${CXXFLAGS} ${CPPFLAGS} \
-    $(python3-config --cflags) -o test $(python3-config --ldflags --embed) $(python3-config --includes) \
+    $(python3-config --cflags) $(python3-config --ldflags --embed) $(python3-config --includes) \
     ${INCLUDE} \
     ${SRC}/${PROGRAM}.cpp \
     ${LIBS} \
