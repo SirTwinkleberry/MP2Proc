@@ -682,6 +682,9 @@ void plot_surface(const std::vector<::std::vector<Numeric>> &x,
     if (it->first == "linewidth" || it->first == "alpha") {
       PyDict_SetItemString(kwargs, it->first.c_str(),
         PyFloat_FromDouble(std::stod(it->second)));
+    } else if (it->first == "rstride" || it->first == "cstride") {
+      PyDict_SetItemString(kwargs, it->first.c_str(),
+        PyInt_FromLong(std::stod(it->second)));
     } else {
       PyDict_SetItemString(kwargs, it->first.c_str(),
         PyString_FromString(it->second.c_str()));
