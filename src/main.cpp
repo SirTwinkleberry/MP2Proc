@@ -39,6 +39,8 @@ using access = _access;
 #include "src/normalize.hpp"
 #include "src/denoise.hpp"
 #include "src/preprocessing.hpp"
+#include "src/visuals.hpp"
+
 
 
 /**
@@ -129,7 +131,8 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"do_bound_B1_to_valid_interpolation_range", BOOL}
         , {"do_round_on_export", BOOL}
         , {"export_quantitative_instead_of_qualitative", BOOL}
-        , {"export_interpolation_hypersurface_plot", BOOL}
+        , {"export_interpolation_hypersurface_data_n_plot", BOOL}
+        , {"show_interpolation_hypersurface_plot", BOOL}
 
         , {"compute_t1wUNI_DEN", BOOL}
         , {"compute_t1wUNI_B1Corrected", BOOL}
@@ -158,7 +161,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"path_OUTPUT_FLAWS_dicomUnit", OUTPUT}
         , {"path_OUTPUT_FLAWS_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_global_mask", OUTPUT}
-        , {"path_OUTPUT_interpolant_hypersurface_gnuplot", OUTPUT}
+        , {"path_OUTPUT_interpolation_hypersurface_no_ext", OUTPUT}
 
         , {"ants_interpolation_method_for_resampling", STRING}
         , {"ants_smoothing_sigma", STRING}
@@ -568,7 +571,9 @@ int main(int argc, char const *argv[])
         /* 
             PREPARING: INTERPOLANT
             - DEFINING 2 RANGES: (X (no unit), Y (ms))
-            - INITIALIZING INTERPOLANT FROM THESE RANGES
+            - COMPUTING THEORETICAL MP2RAGE SIGNAL IN [-0.5, 0.5] RANGE
+            - PLOTTING THE INTERPOLATION HYPERSURFACE Z = F(X, Y)
+            - INITIALIZING INTERPOLANT FROM X, Y RANGES AND Z SIGNAL
          */
         const Eigen::ArrayXd B1VectorRange_relative = Eigen::ArrayXd::LinSpaced(
             (int) RANGE_B1.at(0)
@@ -599,16 +604,17 @@ int main(int argc, char const *argv[])
             , VERBOSE
         );
 
-        if ( config["export_interpolation_hypersurface_plot"].template get<bool>() )
+        if ( config["export_interpolation_hypersurface_data_n_plot"].template get<bool>()
+            || config["show_interpolation_hypersurface_plot"].template get<bool>() )
             PLOT_INTERPOLATION_HYPERSURFACE<Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
                 B1VectorRange_relative
                 , QT1VectorRange_in_unit
                 , UNIVectorRange_centered_bijectivity_restored
-                , config["path_OUTPUT_interpolant_hypersurface_gnuplot"].template get<std::string>()
+                , config["path_OUTPUT_interpolation_hypersurface_no_ext"].template get<std::string>()
+                , config["show_interpolation_hypersurface_plot"].template get<bool>()
+                , config["export_interpolation_hypersurface_data_n_plot"].template get<bool>()
                 , VERBOSE
             );
-
-        exit(0);
 
         auto interp = INIT_INTERPOLATOR_IN_UNIT<double, Eigen::ArrayXd, Eigen::ArrayXd, Eigen::ArrayXd>(
             B1VectorRange_relative
