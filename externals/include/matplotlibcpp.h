@@ -592,8 +592,9 @@ void plot_wireframe(const std::vector<::std::vector<Numeric>> &x,
   }
 
   PyObject *fig_args = PyTuple_New(1);
-  PyObject* fig = nullptr;
+  PyObject *fig = nullptr;
   PyTuple_SetItem(fig_args, 0, PyLong_FromLong(fig_number));
+  
   PyObject *fig_exists =
     PyObject_CallObject(
     detail::_interpreter::get().s_python_function_fignum_exists, fig_args);
@@ -2962,7 +2963,7 @@ inline void save(const std::string& filename, const int dpi=0)
     Py_DECREF(res);
 }
 
-inline void rcparams(const std::map<std::string, std::string>& keywords = {}) {
+inline void rcparams(const std::pair<double, double> &figsize = std::pair<double, double>(8, 8), const std::map<std::string, std::string>& keywords = {}) {
     detail::_interpreter::get();
     PyObject* args = PyTuple_New(0);
     PyObject* kwargs = PyDict_New();
@@ -2971,6 +2972,11 @@ inline void rcparams(const std::map<std::string, std::string>& keywords = {}) {
           PyDict_SetItemString(kwargs, it->first.c_str(), PyLong_FromLong(std::stoi(it->second.c_str())));
         else PyDict_SetItemString(kwargs, it->first.c_str(), PyString_FromString(it->second.c_str()));
     }
+
+    PyObject * py_figsize = PyTuple_New(2);
+    PyTuple_SetItem(py_figsize, 0, PyFloat_FromDouble(figsize.first));
+    PyTuple_SetItem(py_figsize, 1, PyFloat_FromDouble(figsize.second));
+    PyDict_SetItemString(kwargs, "figure.figsize", py_figsize);
     
     PyObject * update = PyObject_GetAttrString(detail::_interpreter::get().s_python_function_rcparams, "update");
     PyObject * res = PyObject_Call(update, args, kwargs);
