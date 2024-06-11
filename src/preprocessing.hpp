@@ -44,18 +44,18 @@ static int ANTS_APPLY_TRANSFORMS(const std::string &input, const std::string &re
     if (verbose)
     {
         std::cout << "=======================================================" << "\n" 
-                  << "===== Computing transformed volume from reference =====" << "\n"
+                  << "===== \033[1;35mComputing transformed volume from reference\033[0m =====" << "\n"
                   << "=======================================================" << "\n"
-                  << "Using ANTs software   `antsApplyTransforms`   with:"     << "\n"
-                  << "Number of dimensions       : " << dim                    << "\n"
-                  << "ANTs volume type code      : " << input_imgtype          << "\n"
-                  << "Output datatype            : " << output_datatype        << "\n"
-                  << "Transforms array           : " << transforms             << "\n"
-                  << "Interpolation method       : " << interpolation          << "\n"
-                  << "Default extrapolation value: " << default_value          << "\n"
-                  << "Input volume               : " << input                  << "\n"
-                  << "Reference volume           : " << reference              << "\n"
-                  << "Output volume              : " << output
+                  << "Using ANTs software   `\033[1;33mantsApplyTransforms\033[0m`   with:"     << "\n"
+                  << "\033[36mNumber of dimensions       \033[0m: " << dim                    << "\n"
+                  << "\033[96mANTs volume type code      \033[0m: " << input_imgtype          << "\n"
+                  << "\033[36mOutput datatype            \033[0m: " << output_datatype        << "\n"
+                  << "\033[96mTransforms array           \033[0m: " << transforms             << "\n"
+                  << "\033[36mInterpolation method       \033[0m: " << interpolation          << "\n"
+                  << "\033[96mDefault extrapolation value\033[0m: " << default_value          << "\n"
+                  << "\033[36mInput volume               \033[0m: " << input                  << "\n"
+                  << "\033[96mReference volume           \033[0m: " << reference              << "\n"
+                  << "\033[36mOutput volume              \033[0m: " << output
                   << std::endl;
 
         TRANSFORMS_VECTOR.push_back("-v");
@@ -101,15 +101,15 @@ static int ANTS_SMOOTH_IMAGE(const std::string &input, const std::string &output
 
     if (verbose) {
         std::cout << "=============================================="        << "\n" 
-                  << "===== Applying Gaussian smooth to volume ====="        << "\n"
+                  << "===== \033[1;35mApplying Gaussian smooth to volume\033[0m ====="        << "\n"
                   << "=============================================="        << "\n"
-                  << "Using ANTs software   `SmoothImage`   with:"           << "\n"
-                  << "Number of dimensions  : " << dim                       << "\n"
-                  << "Gaussian STD          : " << sigma                     << "\n"
-                  << "Is in spacing units   : " << is_sigma_in_spacing_units << "\n"
-                  << "Using median filtering: " << use_median_filtering      << "\n"
-                  << "Input volume          : " << input                     << "\n"
-                  << "Output volume         : " << output                    << "\n"
+                  << "Using ANTs software   `\033[1;33mSmoothImage\033[0m`   with:"           << "\n"
+                  << "\033[36mNumber of dimensions  \033[0m: " << dim                       << "\n"
+                  << "\033[96mGaussian STD          \033[0m: " << sigma                     << "\n"
+                  << "\033[36mIs in spacing units   \033[0m: " << is_sigma_in_spacing_units << "\n"
+                  << "\033[96mUsing median filtering\033[0m: " << use_median_filtering      << "\n"
+                  << "\033[36mInput volume          \033[0m: " << input                     << "\n"
+                  << "\033[96mOutput volume         \033[0m: " << output                    << "\n"
                   << std::endl;
     }
 
