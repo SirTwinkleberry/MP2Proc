@@ -108,7 +108,7 @@ static XT RESTORE_BIJECTIVITY(const XT &X, const YT &BOUNDS, std::vector<std::pa
 
             min_bounds = std::max(min_bounds, BOUNDS.row(min_idx)[0]);
             max_bounds = std::min(max_bounds, BOUNDS.row(max_idx)[0]);
-            
+
             auto min_signal = out.row(i)[min_idx];
             auto max_signal = out.row(i)[max_idx];
 
@@ -116,17 +116,23 @@ static XT RESTORE_BIJECTIVITY(const XT &X, const YT &BOUNDS, std::vector<std::pa
                 out(i, j) = min_signal;
             for ( size_t j = max_idx ; j < out.cols() ; ++j )
                 out(i, j) = max_signal;
-        }
 
-        bijectivity_range->push_back(std::pair<double, double>(min_bounds, max_bounds));
+            bijectivity_range->push_back(std::pair<double, double>(BOUNDS.row(min_idx)[0], BOUNDS.row(max_idx)[0]));
+        }
+        else
+        {
+            auto row = BOUNDS.row(i);
+            bijectivity_range->push_back(std::pair<double, double>(*std::min_element(row.begin(), row.end()), *std::max_element(row.begin(), row.end())));
+        }
     }
 
     if ( verbose )
     {
         std::cout << "Global bijectivity range: " << min_bounds << " < T1 (in provided unit) < " << max_bounds << std::endl;
         std::cout << "Local bijectivity range:" << std::endl;
+        size_t i = 0;
         for ( const std::pair<double, double> & pair : *bijectivity_range )
-            std::cout << "\t" << pair.first << " < T1 (in provided unit) < " << pair.second << std::endl;
+            std::cout << "\t" << i++ << "\t" << pair.first << " < T1 (in provided unit) < " << pair.second << std::endl;
     }
     return (XT) out;
 }

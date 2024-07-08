@@ -150,7 +150,7 @@ void check_type_validity_of_parameters(const nlohmann::json &config, bool verbos
         , {"path_INPUT_inversion_2_msUnit", INPUT}
         , {"path_INPUT_t1wUNI_dicomUnit", INPUT}
 
-        , {"path_OUTPUT_b1_processed_prct", OUTPUT}
+        , {"path_OUTPUT_b1_processed_perthousand", OUTPUT}
         , {"path_OUTPUT_t1wUNI_DEN_dicomUnit", OUTPUT}
         , {"path_OUTPUT_t1wUNI_B1Corrected_dicomUnit", OUTPUT}
         , {"path_OUTPUT_t1wUNI_B1Corrected_DEN_dicomUnit", OUTPUT}
@@ -386,7 +386,7 @@ int main(int argc, char const *argv[])
                 if ( EXIT_FAILURE == ANTS_APPLY_TRANSFORMS(
                         key
                         , config["path_INPUT_t1wUNI_dicomUnit"].template get<std::string>()
-                        , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                        , config["path_OUTPUT_b1_processed_perthousand"].template get<std::string>()
                         , "default"
                         , "identity"
                         , config["ants_interpolation_method_for_resampling"].template get<std::string>()
@@ -397,7 +397,7 @@ int main(int argc, char const *argv[])
                     )
                     std::cout << "\033[1;31mFailed to apply transforms. Attempting to continue without.\033[0m" << std::endl;
                 else
-                    config["path_INPUT_b1_faUnit"] = config["path_OUTPUT_b1_processed_prct"].template get<std::string>();
+                    config["path_INPUT_b1_faUnit"] = config["path_OUTPUT_b1_processed_perthousand"].template get<std::string>();
             }
             catch (const std::exception &e)
             {
@@ -414,7 +414,7 @@ int main(int argc, char const *argv[])
                 if ( !file_exists(key) ) throw std::invalid_argument(key + " file does not exist.");
                 if ( EXIT_FAILURE == ANTS_SMOOTH_IMAGE(
                         key
-                        , config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                        , config["path_OUTPUT_b1_processed_perthousand"].template get<std::string>()
                         , 3
                         , config["ants_smoothing_sigma"].template get<std::string>()
                         , config["is_ants_smoothing_sigma_in_spacing_units"].template get<bool>()
@@ -423,7 +423,7 @@ int main(int argc, char const *argv[])
                     )
                     std::cout << "\033[1;31mFailed to apply Gaussian smoothing. Continuing without.\033[0m" << std::endl;
                 else
-                    config["path_INPUT_b1_faUnit"] = config["path_OUTPUT_b1_processed_prct"].template get<std::string>();
+                    config["path_INPUT_b1_faUnit"] = config["path_OUTPUT_b1_processed_perthousand"].template get<std::string>();
             }
             catch (const std::exception &e)
             {
@@ -995,10 +995,10 @@ int main(int argc, char const *argv[])
             BRING PROCESSED B1 MAP FROM RELATIVE TO PERCENT LEVELS
             EXPORT ALL MAPS & MASKS TO DISK
          */
-        eigen_B1_in_UNI_SPACE_relative = eigen_B1_in_UNI_SPACE_relative.array() * 100.;
+        eigen_B1_in_UNI_SPACE_relative = eigen_B1_in_UNI_SPACE_relative.array() * 1000.;
         export_vector.push_back(
             std::pair<std::string, Eigen::ArrayXd*>(
-                config["path_OUTPUT_b1_processed_prct"].template get<std::string>()
+                config["path_OUTPUT_b1_processed_perthousand"].template get<std::string>()
                 , &eigen_B1_in_UNI_SPACE_relative
             )
         );
