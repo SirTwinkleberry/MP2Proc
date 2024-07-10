@@ -1011,7 +1011,7 @@ int main(int argc, char const *argv[])
             , std::min(N_THREADS, (int) export_mask_vector.size())
             , VERBOSE
         );
-        
+
         export_mask_vector.clear();
 
         EXPORT_RESULTS<Eigen::ArrayXd>(
