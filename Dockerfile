@@ -8,7 +8,7 @@ RUN pwd
 
 ADD . /root/VolProc/
 
-RUN mv /root/VolProc/externals/lib/libboost_timer.so.1.83.0 /usr/local/lib/libboost_timer.so.1.83.0
+RUN mv /root/VolProc/externals/libboost_timer /usr/local/lib/libboost_timer.so.1.83.0
 
 RUN echo export LD_LIBRARY_PATH=/usr/local/lib >> ~/.bashrc
 
