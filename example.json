@@ -42,7 +42,7 @@
     "path_OUTPUT_global_mask"                       : "/path/to/desired/location/out_global_mask.nii.gz",
     "path_OUTPUT_interpolation_hypersurface_no_ext" : "/path/to/desired/location/out_interpolant_hypersurface_plot",
 
-    "ants_interpolation_method_for_resampling"      : "BSpline[3]",
+    "ants_interpolation_method_for_resampling"      : "Linear",
     "ants_smoothing_sigma"                          : "3x1x1",
 
 
