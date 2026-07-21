@@ -1,4 +1,4 @@
-FROM python:latest
+FROM python:3.12-slim
 
 WORKDIR /root
 
@@ -12,4 +12,4 @@ RUN mv /root/VolProc/externals/libboost_timer /usr/local/lib/libboost_timer.so.1
 
 RUN echo export LD_LIBRARY_PATH=/usr/local/lib >> ~/.bashrc
 
-RUN pip install numpy==1.26.4 matplotlib==3.8.0
+RUN pip install --no-cache-dir numpy==1.26.4 matplotlib==3.8.0
